@@ -1,0 +1,22 @@
+# Xcode
+.DS_Store
+*.xcuserstate
+*.xcworkspace
+xcuserdata/
+DerivedData/
+*.moved-aside
+build/
+
+# Swift Package Manager
+.packages/
+.swiftpm/
+
+# IDE
+.vscode/
+.idea/
+
+# Misc
+*.hmap
+*.app
+*.dSYM.zip
+NetPulse.zip
