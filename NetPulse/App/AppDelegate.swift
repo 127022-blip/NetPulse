@@ -12,6 +12,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var cancellables = Set<AnyCancellable>()
     private var eventMonitor: Any?
     private var aboutWindow: NSWindow?
+    private var settingsWindow: NSWindow?
 
     // MARK: - 应用代理方法
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -78,6 +79,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         let contentView = DropdownPanelView(viewModel: viewModel)
         popover?.contentViewController = NSHostingController(rootView: contentView)
+
+        // 监听设置通知
+        NotificationCenter.default.addObserver(
+            forName: .openSettings,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.showSettings()
+        }
     }
 
     private func setupEventMonitor() {
@@ -264,6 +274,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         window.level = .floating
 
         aboutWindow = window
+    }
+
+    @objc private func showSettings() {
+        // 关闭已存在的设置窗口
+        settingsWindow?.close()
+
+        let settingsViewModel = SettingsViewModel()
+        let settingsView = SettingsView(viewModel: settingsViewModel)
+
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 400, height: 500),
+            styleMask: [.titled, .closable],
+            backing: .buffered,
+            defer: false
+        )
+        window.title = "设置"
+        window.contentView = NSHostingView(rootView: settingsView)
+        window.center()
+        window.makeKeyAndOrderFront(nil)
+        window.level = .floating
+
+        settingsWindow = window
     }
 
     @objc private func quitApp() {

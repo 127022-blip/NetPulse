@@ -15,7 +15,7 @@ struct AboutView: View {
                 .font(.system(size: 24, weight: .bold))
 
             // 版本号
-            Text("版本 1.1.0")
+            Text("版本 1.3.0")
                 .font(.system(size: 12))
                 .foregroundColor(.secondary)
 

@@ -90,6 +90,25 @@ struct SettingsView: View {
                                             .foregroundColor(.secondary)
                                     }
                                 }
+
+                                Toggle("流量超限时通知", isOn: $viewModel.trafficAlertEnabled)
+                                    .font(.system(size: 13))
+                                    .padding(.leading, 16)
+
+                                if viewModel.trafficAlertEnabled {
+                                    HStack {
+                                        Text("每日限制")
+                                            .font(.system(size: 13))
+                                            .padding(.leading, 32)
+                                        Spacer()
+                                        TextField("GB", value: $viewModel.dailyTrafficLimitGB, format: .number)
+                                            .textFieldStyle(.roundedBorder)
+                                            .frame(width: 60)
+                                        Text("GB")
+                                            .font(.system(size: 13))
+                                            .foregroundColor(.secondary)
+                                    }
+                                }
                             }
 
                             // 授权状态提示
@@ -144,6 +163,12 @@ struct SettingsView: View {
                     // 重置设置
                     settingsSection(title: "数据管理", icon: "trash") {
                         VStack(alignment: .leading, spacing: 12) {
+                            Button("导出流量数据 (CSV)") {
+                                viewModel.exportTrafficDataCSV()
+                            }
+                            .font(.system(size: 13))
+                            .foregroundColor(.accentColor)
+
                             Button("重置所有设置为默认值") {
                                 viewModel.resetToDefaults()
                             }

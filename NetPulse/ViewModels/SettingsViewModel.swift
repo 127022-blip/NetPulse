@@ -64,6 +64,16 @@ final class SettingsViewModel: ObservableObject {
         didSet { saveSettings() }
     }
 
+    /// 流量提醒开关
+    @Published var trafficAlertEnabled: Bool {
+        didSet { saveSettings() }
+    }
+
+    /// 每日流量限制 (GB)
+    @Published var dailyTrafficLimitGB: Double {
+        didSet { saveSettings() }
+    }
+
     /// 通知授权状态
     @Published var isNotificationAuthorized: Bool = false
 
@@ -85,6 +95,8 @@ final class SettingsViewModel: ObservableObject {
         self.runInBackground = settings.runInBackground
         self.launchAtLogin = settings.launchAtLogin
         self.miniWindowFloats = settings.miniWindowFloats
+        self.trafficAlertEnabled = settings.trafficAlertEnabled
+        self.dailyTrafficLimitGB = Double(settings.dailyTrafficLimit) / (1024 * 1024 * 1024)
 
         setupBindings()
     }
@@ -123,6 +135,37 @@ final class SettingsViewModel: ObservableObject {
         runInBackground = defaultSettings.runInBackground
         launchAtLogin = defaultSettings.launchAtLogin
         miniWindowFloats = defaultSettings.miniWindowFloats
+        trafficAlertEnabled = defaultSettings.trafficAlertEnabled
+        dailyTrafficLimitGB = Double(defaultSettings.dailyTrafficLimit) / (1024 * 1024 * 1024)
+    }
+
+    /// 导出流量数据为 CSV
+    func exportTrafficDataCSV() {
+        let storageService = StorageService.shared
+        let records = storageService.getRecentTrafficRecords(days: 30)
+
+        var csvContent = "日期,下载流量,上传流量,峰值下载速度,峰值上传速度\n"
+        for record in records {
+            let download = ByteFormatter.formatBytes(record.downloadBytes)
+            let upload = ByteFormatter.formatBytes(record.uploadBytes)
+            let peakDown = ByteFormatter.formatSpeed(record.peakDownloadSpeed)
+            let peakUp = ByteFormatter.formatSpeed(record.peakUploadSpeed)
+            csvContent += "\(record.date),\(download),\(upload),\(peakDown),\(peakUp)\n"
+        }
+
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.commaSeparatedText]
+        panel.nameFieldStringValue = "NetPulse_流量记录_\(DateFormatter.yearMonthDay.string(from: Date())).csv"
+        panel.canCreateDirectories = true
+
+        if panel.runModal() == .OK, let url = panel.url {
+            do {
+                try csvContent.write(to: url, atomically: true, encoding: .utf8)
+                print("[NetPulse] 流量数据已导出到: \(url.path)")
+            } catch {
+                print("[NetPulse] 导出流量数据失败: \(error)")
+            }
+        }
     }
 
     /// 导出设置 (用于调试)
@@ -157,6 +200,8 @@ final class SettingsViewModel: ObservableObject {
         settings.runInBackground = runInBackground
         settings.launchAtLogin = launchAtLogin
         settings.miniWindowFloats = miniWindowFloats
+        settings.trafficAlertEnabled = trafficAlertEnabled
+        settings.dailyTrafficLimit = UInt64(dailyTrafficLimitGB * 1024 * 1024 * 1024)
         settings.save()
     }
 }

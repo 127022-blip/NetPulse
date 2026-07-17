@@ -11,6 +11,7 @@
 		276B748DA2888CCC4C73B5979F1D03D2 /* DropdownPanelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA233880636E59E62CE4096EB73886AB /* DropdownPanelView.swift */; };
 		3424F48D2E9BCA48E2F9439D6FDDA2B0 /* MenuBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C68295A3C533D97BFE53CBA37B30828F /* MenuBarView.swift */; };
 		43A921F15754C5107624BF873DCE2A32 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B62D9D2EA6843F359F9CB7B7A7200A7C /* Assets.xcassets */; };
+		4ABF1DFB668BAABD94BA64EF235C00DD /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 402940240CA94638BE22FB984D4FBB45 /* Localizable.strings */; };
 		4B512ADC7965BD1717908A21EDB06A3F /* StorageService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C17F60AC375FC99408DDC85F8842F324 /* StorageService.swift */; };
 		5B867F36D069FE90EC921107999DC7FB /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71813406667608150282ADCF4DE88CBA /* SettingsView.swift */; };
 		66675644427ABB1EC3CBAEC18C4BBDE1 /* NetworkMonitorService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D43F86D0DBF95F87C52025884999B87 /* NetworkMonitorService.swift */; };
@@ -31,6 +32,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		061C3458C5FA2798851443A2A12B62B4 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/Localizable.strings"; sourceTree = "<group>"; };
 		19A78B117A69CABB215CF69A8C380A20 /* NetworkMonitorViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkMonitorViewModel.swift; sourceTree = "<group>"; };
 		27F888A90B75D375EF2EF5201D80CA11 /* MiniWindowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MiniWindowView.swift; sourceTree = "<group>"; };
 		3D5E56704933D448C2BC726A2B269167 /* SpeedWaveformView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeedWaveformView.swift; sourceTree = "<group>"; };
@@ -50,6 +52,7 @@
 		BA233880636E59E62CE4096EB73886AB /* DropdownPanelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DropdownPanelView.swift; sourceTree = "<group>"; };
 		BB2D36587729055055AC26862B1F83E3 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		C17F60AC375FC99408DDC85F8842F324 /* StorageService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorageService.swift; sourceTree = "<group>"; };
+		C2CBCAC6C760826835827807E483C489 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		C382A9B84BC2009EDDC99AD57A749F0B /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
 		C46519C5B5E0E3E0D691445303CA247A /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		C68295A3C533D97BFE53CBA37B30828F /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarView.swift; sourceTree = "<group>"; };
@@ -160,6 +163,7 @@
 			children = (
 				B62D9D2EA6843F359F9CB7B7A7200A7C /* Assets.xcassets */,
 				87CA8A5B8434CCB6C3C8CA143DCCA58D /* Info.plist */,
+				402940240CA94638BE22FB984D4FBB45 /* Localizable.strings */,
 				45991A45A50DB7366B209403A7FA125E /* NetPulse.entitlements */,
 			);
 			path = Resources;
@@ -218,6 +222,7 @@
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
+				"zh-Hans",
 			);
 			mainGroup = 6DCB79CF066C57125EDFE41AEEC3D28E;
 			projectDirPath = "";
@@ -234,6 +239,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				43A921F15754C5107624BF873DCE2A32 /* Assets.xcassets in Resources */,
+				4ABF1DFB668BAABD94BA64EF235C00DD /* Localizable.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -268,6 +274,18 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXVariantGroup section */
+		402940240CA94638BE22FB984D4FBB45 /* Localizable.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				C2CBCAC6C760826835827807E483C489 /* en */,
+				061C3458C5FA2798851443A2A12B62B4 /* zh-Hans */,
+			);
+			name = Localizable.strings;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
 /* Begin XCBuildConfiguration section */
 		19A9B1FE5580A369050F9AE82EB1A4C2 /* Release */ = {
 			isa = XCBuildConfiguration;
@@ -293,10 +311,10 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				ENABLE_HARDENED_RUNTIME = YES;
 				MACOSX_DEPLOYMENT_TARGET = 12.0;
-				MARKETING_VERSION = 1.2.0;
+				MARKETING_VERSION = 1.3.0;
 				PRODUCT_NAME = NetPulse;
 				SDKROOT = macosx;
 				SWIFT_VERSION = 5.9;
@@ -327,10 +345,10 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				ENABLE_HARDENED_RUNTIME = YES;
 				MACOSX_DEPLOYMENT_TARGET = 12.0;
-				MARKETING_VERSION = 1.2.0;
+				MARKETING_VERSION = 1.3.0;
 				PRODUCT_NAME = NetPulse;
 				SDKROOT = macosx;
 				SWIFT_VERSION = 5.9;

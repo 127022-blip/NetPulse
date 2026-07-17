@@ -116,7 +116,10 @@ final class NetworkMonitorViewModel: ObservableObject {
         let today = storageService.todayTraffic
         todayDownload = ByteFormatter.formatBytes(today.downloadBytes)
         todayUpload = ByteFormatter.formatBytes(today.uploadBytes)
-        
+
+        // 检查是否超过流量限制
+        checkTrafficLimit(today: today)
+
         // 更新历史流量记录
         recentTrafficRecords = storageService.getRecentTrafficRecords(days: 5)
         
@@ -134,6 +137,16 @@ final class NetworkMonitorViewModel: ObservableObject {
         speedHistory.append(newPoint)
         if speedHistory.count > maxHistoryCount {
             speedHistory.removeFirst()
+        }
+    }
+
+    /// 检查流量限制
+    private func checkTrafficLimit(today: TrafficRecord) {
+        guard settings.trafficAlertEnabled else { return }
+
+        let totalUsed = today.downloadBytes + today.uploadBytes
+        if totalUsed >= settings.dailyTrafficLimit {
+            NotificationService.shared.sendHighTrafficNotification(usage: ByteFormatter.formatBytes(totalUsed))
         }
     }
 }

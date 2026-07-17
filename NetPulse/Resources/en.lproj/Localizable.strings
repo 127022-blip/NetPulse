@@ -1,0 +1,61 @@
+/* Common */
+"app.name" = "NetPulse";
+"button.ok" = "OK";
+"button.cancel" = "Cancel";
+"button.done" = "Done";
+"button.close" = "Close";
+"button.quit" = "Quit";
+"button.about" = "About";
+"button.settings" = "Settings";
+"button.export" = "Export";
+
+/* Network Status */
+"network.connected" = "Connected";
+"network.disconnected" = "Disconnected";
+"network.wifi.name" = "Wi-Fi";
+"network.not.connected" = "Not Connected";
+"network.ip.address" = "IP Address";
+"network.gateway" = "Gateway";
+"network.signal" = "Signal Strength";
+
+/* Speed */
+"speed.download" = "Download";
+"speed.upload" = "Upload";
+"speed.unit.kb" = "KB/s";
+"speed.unit.mb" = "MB/s";
+
+/* Traffic */
+"traffic.today" = "Today's Traffic";
+"traffic.history" = "History";
+"traffic.export" = "Export Traffic Data (CSV)";
+"traffic.limit" = "Daily Limit";
+"traffic.used" = "Used";
+
+/* Settings */
+"settings.title" = "Settings";
+"settings.display" = "Display";
+"settings.notifications" = "Notifications";
+"settings.network" = "Network Interface";
+"settings.startup" = "Startup";
+"settings.data" = "Data Management";
+"settings.menu.bar.mode" = "Menu Bar Display";
+"settings.update.interval" = "Update Interval";
+"settings.notifications.enabled" = "Enable Notifications";
+"settings.disconnect.alert" = "Disconnect Alert";
+"settings.speed.alert" = "Low Speed Alert";
+"settings.traffic.alert" = "Traffic Limit Alert";
+"settings.threshold" = "Threshold";
+"settings.launch.at.login" = "Launch at Login";
+"settings.run.in.background" = "Run in Background";
+"settings.reset.to.defaults" = "Reset to Defaults";
+
+/* Notifications */
+"notification.disconnect.title" = "Network Disconnected";
+"notification.disconnect.body" = "Network connection lost";
+"notification.reconnect.title" = "Network Reconnected";
+"notification.slow.speed.title" = "Slow Speed";
+"notification.high.traffic.title" = "Traffic Alert";
+
+/* About */
+"about.version" = "Version";
+"about.copyright" = "Copyright";

@@ -260,9 +260,20 @@ struct DropdownPanelView: View {
                 }
                 .buttonStyle(.plain)
                 .foregroundColor(.secondary)
-                
+
+                Button(action: {
+                    NotificationCenter.default.post(name: .openSettings, object: nil)
+                }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "gear").font(.system(size: 11))
+                        Text("设置").font(.system(size: 11))
+                    }
+                }
+                .buttonStyle(.plain)
+                .foregroundColor(.secondary)
+
                 Spacer()
-                
+
                 Button(action: {
                     NSApp.terminate(nil)
                 }) {

@@ -1,0 +1,61 @@
+/* Common */
+"app.name" = "NetPulse";
+"button.ok" = "确定";
+"button.cancel" = "取消";
+"button.done" = "完成";
+"button.close" = "关闭";
+"button.quit" = "退出";
+"button.about" = "关于";
+"button.settings" = "设置";
+"button.export" = "导出";
+
+/* Network Status */
+"network.connected" = "已连接";
+"network.disconnected" = "已断开";
+"network.wifi.name" = "Wi-Fi";
+"network.not.connected" = "未连接WiFi";
+"network.ip.address" = "IP 地址";
+"network.gateway" = "网关";
+"network.signal" = "信号强度";
+
+/* Speed */
+"speed.download" = "下载";
+"speed.upload" = "上传";
+"speed.unit.kb" = "KB/s";
+"speed.unit.mb" = "MB/s";
+
+/* Traffic */
+"traffic.today" = "今日流量";
+"traffic.history" = "历史统计";
+"traffic.export" = "导出流量数据 (CSV)";
+"traffic.limit" = "每日限制";
+"traffic.used" = "已使用";
+
+/* Settings */
+"settings.title" = "设置";
+"settings.display" = "显示设置";
+"settings.notifications" = "通知设置";
+"settings.network" = "网络接口";
+"settings.startup" = "启动设置";
+"settings.data" = "数据管理";
+"settings.menu.bar.mode" = "菜单栏显示";
+"settings.update.interval" = "更新频率";
+"settings.notifications.enabled" = "启用通知";
+"settings.disconnect.alert" = "断网时发送通知";
+"settings.speed.alert" = "速度低于阈值时通知";
+"settings.traffic.alert" = "流量超限时通知";
+"settings.threshold" = "阈值";
+"settings.launch.at.login" = "启动时自动运行";
+"settings.run.in.background" = "后台持续运行";
+"settings.reset.to.defaults" = "重置所有设置为默认值";
+
+/* Notifications */
+"notification.disconnect.title" = "网络已断开";
+"notification.disconnect.body" = "网络连接已断开";
+"notification.reconnect.title" = "网络已恢复";
+"notification.slow.speed.title" = "网速较慢";
+"notification.high.traffic.title" = "流量提醒";
+
+/* About */
+"about.version" = "版本";
+"about.copyright" = "版权所有";

@@ -75,3 +75,8 @@ let iso8601Formatter: ISO8601DateFormatter = {
     formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
     return formatter
 }()
+
+// MARK: - Notification Names
+extension Notification.Name {
+    static let openSettings = Notification.Name("com.netpulse.openSettings")
+}

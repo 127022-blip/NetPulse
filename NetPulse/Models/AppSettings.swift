@@ -32,6 +32,12 @@ struct AppSettings: Codable {
     /// 迷你窗口是否置顶
     var miniWindowFloats: Bool = true
 
+    /// 每日流量限制 (bytes)，默认 1GB
+    var dailyTrafficLimit: UInt64 = 1024 * 1024 * 1024
+
+    /// 流量提醒是否启用
+    var trafficAlertEnabled: Bool = false
+
     /// 菜单栏显示模式枚举
     enum MenuBarDisplayMode: Int, Codable, CaseIterable {
         case iconOnly = 0           // 仅图标

@@ -118,6 +118,15 @@ final class NetworkMonitorService: ObservableObject {
                 object: nil,
                 userInfo: ["isConnected": isConnected]
             )
+
+            // 发送断网/恢复通知
+            if settings.disconnectNotificationEnabled {
+                if !isConnected {
+                    NotificationService.shared.sendDisconnectNotification()
+                } else {
+                    NotificationService.shared.sendReconnectNotification(speed: "...")
+                }
+            }
         }
 
         print("[NetPulse] 网络状态: \(isConnected ? "已连接" : "已断开"), 接口: \(currentStats.activeInterface), WiFi: \(wifiName)")
