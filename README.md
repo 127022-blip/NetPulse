@@ -24,14 +24,14 @@ macOS 菜单栏网速监控工具
 
 ### 方法一：下载预编译版本
 
-1. 从 [Releases](../../releases) 下载最新版本
+1. 从 [Releases](https://github.com/127022-blip/NetPulse/releases) 下载最新版本
 2. 解压并拖动到应用程序文件夹
 
 ### 方法二：从源码编译
 
 ```bash
 # 克隆项目
-git clone https://github.com/GengLei/NetPulse.git
+git clone https://github.com/127022-blip/NetPulse.git
 cd NetPulse
 
 # 安装 XcodeGen（如果未安装）
