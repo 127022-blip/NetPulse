@@ -1,0 +1,364 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 50;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		261DC1581017FE0CAEFBDA91EB8FF4B2 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB2D36587729055055AC26862B1F83E3 /* main.swift */; };
+		276B748DA2888CCC4C73B5979F1D03D2 /* DropdownPanelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA233880636E59E62CE4096EB73886AB /* DropdownPanelView.swift */; };
+		3424F48D2E9BCA48E2F9439D6FDDA2B0 /* MenuBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C68295A3C533D97BFE53CBA37B30828F /* MenuBarView.swift */; };
+		43A921F15754C5107624BF873DCE2A32 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B62D9D2EA6843F359F9CB7B7A7200A7C /* Assets.xcassets */; };
+		4B512ADC7965BD1717908A21EDB06A3F /* StorageService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C17F60AC375FC99408DDC85F8842F324 /* StorageService.swift */; };
+		5B867F36D069FE90EC921107999DC7FB /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71813406667608150282ADCF4DE88CBA /* SettingsView.swift */; };
+		66675644427ABB1EC3CBAEC18C4BBDE1 /* NetworkMonitorService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D43F86D0DBF95F87C52025884999B87 /* NetworkMonitorService.swift */; };
+		6D05DDA1236FF2AB0CCCB055720B87D9 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80FAF754045F2F49CF131B6277D09F6C /* NotificationService.swift */; };
+		6F3AADC92A369F1806A2397611E64C6D /* MiniWindowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27F888A90B75D375EF2EF5201D80CA11 /* MiniWindowView.swift */; };
+		7149638ED69356BB9057E63D211BBDA1 /* Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5602429BC9B98056476A88C77C042349 /* Extensions.swift */; };
+		72B7020D530CE7691B3AFC4F042A7D3E /* SpeedWaveformView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D5E56704933D448C2BC726A2B269167 /* SpeedWaveformView.swift */; };
+		88478692B8537BF7125480F9510CE1FC /* TrafficCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = E890E44690962923B476BE33FDC48FFD /* TrafficCalculator.swift */; };
+		A9D987BA0E306B8A8651397C07D05708 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E6B92687B1AE9698682CAA9A4E3D531 /* AboutView.swift */; };
+		AEB703DD591E2305C852A6B40F7FBD4E /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5353CEBD93B5D843DDBE4B6AFB3A32F9 /* AppSettings.swift */; };
+		BBCB24363402E4A2800AB96575B9BBAE /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = C382A9B84BC2009EDDC99AD57A749F0B /* Constants.swift */; };
+		BC3C9152CB66356C44FB2FD53D019A43 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = C46519C5B5E0E3E0D691445303CA247A /* AppDelegate.swift */; };
+		D0953EFEEE1168A3506AB0F6203A2A3A /* NetworkStats.swift in Sources */ = {isa = PBXBuildFile; fileRef = 512CECF59965407F00E3F461E4FE2785 /* NetworkStats.swift */; };
+		DD5EAF0D31B88699942EEA362043A0F2 /* CoreWLAN.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7C6F1A796E1EF7AB56066BD3F92D05A0 /* CoreWLAN.framework */; };
+		E4C7E36B802FD91F7FC9A7A36130EBEB /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9EBA746A17BFDE75241C98F59EAE1A03 /* SettingsViewModel.swift */; };
+		EC678B2222E63AD06103B137F6C32B63 /* ByteFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = E044C6DA2A8445CA702BA5E29CDADDDE /* ByteFormatter.swift */; };
+		F660E8EBD3510DE5F1772B8FA5BDC22C /* NetworkMonitorViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19A78B117A69CABB215CF69A8C380A20 /* NetworkMonitorViewModel.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		19A78B117A69CABB215CF69A8C380A20 /* NetworkMonitorViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkMonitorViewModel.swift; sourceTree = "<group>"; };
+		27F888A90B75D375EF2EF5201D80CA11 /* MiniWindowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MiniWindowView.swift; sourceTree = "<group>"; };
+		3D5E56704933D448C2BC726A2B269167 /* SpeedWaveformView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeedWaveformView.swift; sourceTree = "<group>"; };
+		3E6B92687B1AE9698682CAA9A4E3D531 /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
+		45991A45A50DB7366B209403A7FA125E /* NetPulse.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = NetPulse.entitlements; sourceTree = "<group>"; };
+		512CECF59965407F00E3F461E4FE2785 /* NetworkStats.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkStats.swift; sourceTree = "<group>"; };
+		5353CEBD93B5D843DDBE4B6AFB3A32F9 /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
+		5602429BC9B98056476A88C77C042349 /* Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Extensions.swift; sourceTree = "<group>"; };
+		64D3CBE9211F53A57ED6116A272A63E0 /* NetPulse.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NetPulse.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		71813406667608150282ADCF4DE88CBA /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		7C6F1A796E1EF7AB56066BD3F92D05A0 /* CoreWLAN.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = CoreWLAN.framework; sourceTree = "<group>"; };
+		80FAF754045F2F49CF131B6277D09F6C /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
+		87CA8A5B8434CCB6C3C8CA143DCCA58D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		9D43F86D0DBF95F87C52025884999B87 /* NetworkMonitorService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkMonitorService.swift; sourceTree = "<group>"; };
+		9EBA746A17BFDE75241C98F59EAE1A03 /* SettingsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewModel.swift; sourceTree = "<group>"; };
+		B62D9D2EA6843F359F9CB7B7A7200A7C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		BA233880636E59E62CE4096EB73886AB /* DropdownPanelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DropdownPanelView.swift; sourceTree = "<group>"; };
+		BB2D36587729055055AC26862B1F83E3 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		C17F60AC375FC99408DDC85F8842F324 /* StorageService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorageService.swift; sourceTree = "<group>"; };
+		C382A9B84BC2009EDDC99AD57A749F0B /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
+		C46519C5B5E0E3E0D691445303CA247A /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		C68295A3C533D97BFE53CBA37B30828F /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarView.swift; sourceTree = "<group>"; };
+		E044C6DA2A8445CA702BA5E29CDADDDE /* ByteFormatter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ByteFormatter.swift; sourceTree = "<group>"; };
+		E890E44690962923B476BE33FDC48FFD /* TrafficCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrafficCalculator.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		43DFA8C8E924E456406F5B18B4950F37 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				DD5EAF0D31B88699942EEA362043A0F2 /* CoreWLAN.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		0206121205DBD6B8249E101773862955 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				7C6F1A796E1EF7AB56066BD3F92D05A0 /* CoreWLAN.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		129E8D6749C071D45CBE661EF642956E /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				9D43F86D0DBF95F87C52025884999B87 /* NetworkMonitorService.swift */,
+				80FAF754045F2F49CF131B6277D09F6C /* NotificationService.swift */,
+				C17F60AC375FC99408DDC85F8842F324 /* StorageService.swift */,
+				E890E44690962923B476BE33FDC48FFD /* TrafficCalculator.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		3EFFE123D8B8CA2398987D8EF3BFA002 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				19A78B117A69CABB215CF69A8C380A20 /* NetworkMonitorViewModel.swift */,
+				9EBA746A17BFDE75241C98F59EAE1A03 /* SettingsViewModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		5A4EC38DD1CD6D9973825E78AF65F343 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				64D3CBE9211F53A57ED6116A272A63E0 /* NetPulse.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		64CFA5F3DDB7AA658F00A779E4A04711 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				3E6B92687B1AE9698682CAA9A4E3D531 /* AboutView.swift */,
+				BA233880636E59E62CE4096EB73886AB /* DropdownPanelView.swift */,
+				C68295A3C533D97BFE53CBA37B30828F /* MenuBarView.swift */,
+				27F888A90B75D375EF2EF5201D80CA11 /* MiniWindowView.swift */,
+				71813406667608150282ADCF4DE88CBA /* SettingsView.swift */,
+				3D5E56704933D448C2BC726A2B269167 /* SpeedWaveformView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		6796A991058E2F935152B52CE4F168F0 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				5353CEBD93B5D843DDBE4B6AFB3A32F9 /* AppSettings.swift */,
+				512CECF59965407F00E3F461E4FE2785 /* NetworkStats.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		6DCB79CF066C57125EDFE41AEEC3D28E = {
+			isa = PBXGroup;
+			children = (
+				EA0B8D28FF157F73890A893625088FB3 /* NetPulse */,
+				0206121205DBD6B8249E101773862955 /* Frameworks */,
+				5A4EC38DD1CD6D9973825E78AF65F343 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		A6001F218A2B1F7B325C19869A7B5A9D /* Utilities */ = {
+			isa = PBXGroup;
+			children = (
+				E044C6DA2A8445CA702BA5E29CDADDDE /* ByteFormatter.swift */,
+				C382A9B84BC2009EDDC99AD57A749F0B /* Constants.swift */,
+				5602429BC9B98056476A88C77C042349 /* Extensions.swift */,
+			);
+			path = Utilities;
+			sourceTree = "<group>";
+		};
+		DAA4169FFF4DEFFE765E549B0594081C /* App */ = {
+			isa = PBXGroup;
+			children = (
+				C46519C5B5E0E3E0D691445303CA247A /* AppDelegate.swift */,
+				BB2D36587729055055AC26862B1F83E3 /* main.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		DD349A989982704144813AC49153209E /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				B62D9D2EA6843F359F9CB7B7A7200A7C /* Assets.xcassets */,
+				87CA8A5B8434CCB6C3C8CA143DCCA58D /* Info.plist */,
+				45991A45A50DB7366B209403A7FA125E /* NetPulse.entitlements */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		EA0B8D28FF157F73890A893625088FB3 /* NetPulse */ = {
+			isa = PBXGroup;
+			children = (
+				DAA4169FFF4DEFFE765E549B0594081C /* App */,
+				6796A991058E2F935152B52CE4F168F0 /* Models */,
+				DD349A989982704144813AC49153209E /* Resources */,
+				129E8D6749C071D45CBE661EF642956E /* Services */,
+				A6001F218A2B1F7B325C19869A7B5A9D /* Utilities */,
+				3EFFE123D8B8CA2398987D8EF3BFA002 /* ViewModels */,
+				64CFA5F3DDB7AA658F00A779E4A04711 /* Views */,
+			);
+			path = NetPulse;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		60F3F22DE90F07E0B18EF3B0B27A49A6 /* NetPulse */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 69C78CC3637C390C5F5BCCD2AEE15597 /* Build configuration list for PBXNativeTarget "NetPulse" */;
+			buildPhases = (
+				5FFE3339B898AC1FCD474B6DBA91454A /* Sources */,
+				CC78F7F42EE80C85CB8FA8CB6D4A09DC /* Resources */,
+				43DFA8C8E924E456406F5B18B4950F37 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = NetPulse;
+			productName = NetPulse;
+			productReference = 64D3CBE9211F53A57ED6116A272A63E0 /* NetPulse.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		2D0230E09FEF04DBAB2FF4D79176A355 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					60F3F22DE90F07E0B18EF3B0B27A49A6 = {
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 7C692F7B537A491A144AE6D967230460 /* Build configuration list for PBXProject "NetPulse" */;
+			compatibilityVersion = "Xcode 9.3";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = 6DCB79CF066C57125EDFE41AEEC3D28E;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				60F3F22DE90F07E0B18EF3B0B27A49A6 /* NetPulse */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		CC78F7F42EE80C85CB8FA8CB6D4A09DC /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				43A921F15754C5107624BF873DCE2A32 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		5FFE3339B898AC1FCD474B6DBA91454A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A9D987BA0E306B8A8651397C07D05708 /* AboutView.swift in Sources */,
+				BC3C9152CB66356C44FB2FD53D019A43 /* AppDelegate.swift in Sources */,
+				AEB703DD591E2305C852A6B40F7FBD4E /* AppSettings.swift in Sources */,
+				EC678B2222E63AD06103B137F6C32B63 /* ByteFormatter.swift in Sources */,
+				BBCB24363402E4A2800AB96575B9BBAE /* Constants.swift in Sources */,
+				276B748DA2888CCC4C73B5979F1D03D2 /* DropdownPanelView.swift in Sources */,
+				7149638ED69356BB9057E63D211BBDA1 /* Extensions.swift in Sources */,
+				3424F48D2E9BCA48E2F9439D6FDDA2B0 /* MenuBarView.swift in Sources */,
+				6F3AADC92A369F1806A2397611E64C6D /* MiniWindowView.swift in Sources */,
+				66675644427ABB1EC3CBAEC18C4BBDE1 /* NetworkMonitorService.swift in Sources */,
+				F660E8EBD3510DE5F1772B8FA5BDC22C /* NetworkMonitorViewModel.swift in Sources */,
+				D0953EFEEE1168A3506AB0F6203A2A3A /* NetworkStats.swift in Sources */,
+				6D05DDA1236FF2AB0CCCB055720B87D9 /* NotificationService.swift in Sources */,
+				5B867F36D069FE90EC921107999DC7FB /* SettingsView.swift in Sources */,
+				E4C7E36B802FD91F7FC9A7A36130EBEB /* SettingsViewModel.swift in Sources */,
+				72B7020D530CE7691B3AFC4F042A7D3E /* SpeedWaveformView.swift in Sources */,
+				4B512ADC7965BD1717908A21EDB06A3F /* StorageService.swift in Sources */,
+				88478692B8537BF7125480F9510CE1FC /* TrafficCalculator.swift in Sources */,
+				261DC1581017FE0CAEFBDA91EB8FF4B2 /* main.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		19A9B1FE5580A369050F9AE82EB1A4C2 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = NetPulse/Resources/NetPulse.entitlements;
+				CODE_SIGN_IDENTITY = "-";
+				ENABLE_APP_SANDBOX = NO;
+				ENABLE_USER_SELECTED_FILES = NO;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\".\"",
+				);
+				INFOPLIST_FILE = NetPulse/Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = com.netpulse.NetPulse;
+			};
+			name = Release;
+		};
+		472648FE2AE8597A473B89DF36AEBA52 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 3;
+				ENABLE_HARDENED_RUNTIME = YES;
+				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				MARKETING_VERSION = 1.2.0;
+				PRODUCT_NAME = NetPulse;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.9;
+			};
+			name = Debug;
+		};
+		7860C3CDC3CEA73A4F752B1B3001AF1D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = NetPulse/Resources/NetPulse.entitlements;
+				CODE_SIGN_IDENTITY = "-";
+				ENABLE_APP_SANDBOX = NO;
+				ENABLE_USER_SELECTED_FILES = NO;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\".\"",
+				);
+				INFOPLIST_FILE = NetPulse/Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = com.netpulse.NetPulse;
+			};
+			name = Debug;
+		};
+		9933A3A93BCF706BBECC8A5FF2C72E68 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 3;
+				ENABLE_HARDENED_RUNTIME = YES;
+				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				MARKETING_VERSION = 1.2.0;
+				PRODUCT_NAME = NetPulse;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.9;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		69C78CC3637C390C5F5BCCD2AEE15597 /* Build configuration list for PBXNativeTarget "NetPulse" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7860C3CDC3CEA73A4F752B1B3001AF1D /* Debug */,
+				19A9B1FE5580A369050F9AE82EB1A4C2 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = "";
+		};
+		7C692F7B537A491A144AE6D967230460 /* Build configuration list for PBXProject "NetPulse" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				472648FE2AE8597A473B89DF36AEBA52 /* Debug */,
+				9933A3A93BCF706BBECC8A5FF2C72E68 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 2D0230E09FEF04DBAB2FF4D79176A355 /* Project object */;
+}
