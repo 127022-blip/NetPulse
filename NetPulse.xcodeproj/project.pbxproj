@@ -19,6 +19,11 @@
 		6F3AADC92A369F1806A2397611E64C6D /* MiniWindowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27F888A90B75D375EF2EF5201D80CA11 /* MiniWindowView.swift */; };
 		7149638ED69356BB9057E63D211BBDA1 /* Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5602429BC9B98056476A88C77C042349 /* Extensions.swift */; };
 		72B7020D530CE7691B3AFC4F042A7D3E /* SpeedWaveformView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D5E56704933D448C2BC726A2B269167 /* SpeedWaveformView.swift */; };
+		8136D85B0848B6566FC77A22D034DBC2 /* CPUMonitorService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCC7173316118EA89801673429A6E930 /* CPUMonitorService.swift */; };
+		MEMOBUILD1234567890ABCDEF12345678 /* MemoryMonitorService.swift in Sources */ = {isa = PBXBuildFile; fileRef = MEMO1234567890ABCDEF1234567890AB /* MemoryMonitorService.swift */; };
+		DISKBUILD1234567890ABCDEF1234567890 /* DiskMonitorService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DISK1234567890ABCDEF12345678901234 /* DiskMonitorService.swift */; };
+		CPUPBUILD1234567890ABCDEF12345678901 /* CPUTemperatureService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CPUPEMP123456789ABCDEF12345678901234 /* CPUTemperatureService.swift */; };
+		839484D26892B98FE74818415F60EC22 /* LoginItemService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D1139926EA930180995390957F1E2C8 /* LoginItemService.swift */; };
 		88478692B8537BF7125480F9510CE1FC /* TrafficCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = E890E44690962923B476BE33FDC48FFD /* TrafficCalculator.swift */; };
 		A9D987BA0E306B8A8651397C07D05708 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E6B92687B1AE9698682CAA9A4E3D531 /* AboutView.swift */; };
 		AEB703DD591E2305C852A6B40F7FBD4E /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5353CEBD93B5D843DDBE4B6AFB3A32F9 /* AppSettings.swift */; };
@@ -46,6 +51,7 @@
 		7C6F1A796E1EF7AB56066BD3F92D05A0 /* CoreWLAN.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = CoreWLAN.framework; sourceTree = "<group>"; };
 		80FAF754045F2F49CF131B6277D09F6C /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 		87CA8A5B8434CCB6C3C8CA143DCCA58D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		8D1139926EA930180995390957F1E2C8 /* LoginItemService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginItemService.swift; sourceTree = "<group>"; };
 		9D43F86D0DBF95F87C52025884999B87 /* NetworkMonitorService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkMonitorService.swift; sourceTree = "<group>"; };
 		9EBA746A17BFDE75241C98F59EAE1A03 /* SettingsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewModel.swift; sourceTree = "<group>"; };
 		B62D9D2EA6843F359F9CB7B7A7200A7C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -56,7 +62,11 @@
 		C382A9B84BC2009EDDC99AD57A749F0B /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
 		C46519C5B5E0E3E0D691445303CA247A /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		C68295A3C533D97BFE53CBA37B30828F /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarView.swift; sourceTree = "<group>"; };
+		DCC7173316118EA89801673429A6E930 /* CPUMonitorService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CPUMonitorService.swift; sourceTree = "<group>"; };
 		E044C6DA2A8445CA702BA5E29CDADDDE /* ByteFormatter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ByteFormatter.swift; sourceTree = "<group>"; };
+		MEMO1234567890ABCDEF1234567890AB /* MemoryMonitorService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryMonitorService.swift; sourceTree = "<group>"; };
+		DISK1234567890ABCDEF12345678901234 /* DiskMonitorService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiskMonitorService.swift; sourceTree = "<group>"; };
+		CPUPEMP123456789ABCDEF12345678901234 /* CPUTemperatureService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CPUTemperatureService.swift; sourceTree = "<group>"; };
 		E890E44690962923B476BE33FDC48FFD /* TrafficCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrafficCalculator.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -83,10 +93,15 @@
 		129E8D6749C071D45CBE661EF642956E /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				DCC7173316118EA89801673429A6E930 /* CPUMonitorService.swift */,
+				8D1139926EA930180995390957F1E2C8 /* LoginItemService.swift */,
 				9D43F86D0DBF95F87C52025884999B87 /* NetworkMonitorService.swift */,
 				80FAF754045F2F49CF131B6277D09F6C /* NotificationService.swift */,
 				C17F60AC375FC99408DDC85F8842F324 /* StorageService.swift */,
 				E890E44690962923B476BE33FDC48FFD /* TrafficCalculator.swift */,
+				MEMO1234567890ABCDEF1234567890AB /* MemoryMonitorService.swift */,
+				DISK1234567890ABCDEF12345678901234 /* DiskMonitorService.swift */,
+				CPUPEMP123456789ABCDEF12345678901234 /* CPUTemperatureService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -193,6 +208,7 @@
 				5FFE3339B898AC1FCD474B6DBA91454A /* Sources */,
 				CC78F7F42EE80C85CB8FA8CB6D4A09DC /* Resources */,
 				43DFA8C8E924E456406F5B18B4950F37 /* Frameworks */,
+				AB52EEDEAC86769E18E066073C2D3320 /* Rename App with Version */,
 			);
 			buildRules = (
 			);
@@ -245,6 +261,27 @@
 		};
 /* End PBXResourcesBuildPhase section */
 
+/* Begin PBXShellScriptBuildPhase section */
+		AB52EEDEAC86769E18E066073C2D3320 /* Rename App with Version */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Rename App with Version";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# 读取并递增构建计数\nBUILD_NUM_FILE=\"${SRCROOT}/build_number.txt\"\nif [ -f \"$BUILD_NUM_FILE\" ]; then\n  BUILD_NUM=$(cat \"$BUILD_NUM_FILE\")\n  BUILD_NUM=$((BUILD_NUM + 1))\nelse\n  BUILD_NUM=1\nfi\necho \"$BUILD_NUM\" > \"$BUILD_NUM_FILE\"\n\n# 从 Xcode build settings 获取版本信息\nMARKETING_VERSION=$(xcodebuild -project \"${PROJECT_FILE_PATH}\" -target NetPulse -configuration Debug -showBuildSettings 2>/dev/null | grep \"MARKETING_VERSION\" | head -1 | awk '{print $3}')\nif [ -z \"$MARKETING_VERSION\" ]; then\n  MARKETING_VERSION=\"1.4.0\"\nfi\nPRODUCT_NAME=\"NetPulse\"\n\n# 桌面路径\nDESKTOP_DIR=\"${HOME}/Desktop\"\nmkdir -p \"$DESKTOP_DIR\"\n\n# 复制并重命名 app 到桌面（使用 ditto 替代 cp -R）\nSRC_APP=\"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app\"\nDST_APP=\"${DESKTOP_DIR}/${PRODUCT_NAME}-${MARKETING_VERSION}-(${BUILD_NUM}).app\"\n\nif [ -d \"$SRC_APP\" ]; then\n  rm -rf \"$DST_APP\"\n  cp -Rp \"$SRC_APP\" \"$DST_APP\"\n  # 重新签名\n  codesign --force --sign - \"$DST_APP\"\n  sync\n  echo \"✅ Created: $DST_APP\"\nfi\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		5FFE3339B898AC1FCD474B6DBA91454A /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -254,9 +291,14 @@
 				BC3C9152CB66356C44FB2FD53D019A43 /* AppDelegate.swift in Sources */,
 				AEB703DD591E2305C852A6B40F7FBD4E /* AppSettings.swift in Sources */,
 				EC678B2222E63AD06103B137F6C32B63 /* ByteFormatter.swift in Sources */,
+				8136D85B0848B6566FC77A22D034DBC2 /* CPUMonitorService.swift in Sources */,
+				MEMOBUILD1234567890ABCDEF12345678 /* MemoryMonitorService.swift in Sources */,
+				DISKBUILD1234567890ABCDEF1234567890 /* DiskMonitorService.swift in Sources */,
+				CPUPBUILD1234567890ABCDEF12345678901 /* CPUTemperatureService.swift in Sources */,
 				BBCB24363402E4A2800AB96575B9BBAE /* Constants.swift in Sources */,
 				276B748DA2888CCC4C73B5979F1D03D2 /* DropdownPanelView.swift in Sources */,
 				7149638ED69356BB9057E63D211BBDA1 /* Extensions.swift in Sources */,
+				839484D26892B98FE74818415F60EC22 /* LoginItemService.swift in Sources */,
 				3424F48D2E9BCA48E2F9439D6FDDA2B0 /* MenuBarView.swift in Sources */,
 				6F3AADC92A369F1806A2397611E64C6D /* MiniWindowView.swift in Sources */,
 				66675644427ABB1EC3CBAEC18C4BBDE1 /* NetworkMonitorService.swift in Sources */,
@@ -314,7 +356,7 @@
 				CURRENT_PROJECT_VERSION = 4;
 				ENABLE_HARDENED_RUNTIME = YES;
 				MACOSX_DEPLOYMENT_TARGET = 12.0;
-				MARKETING_VERSION = 1.3.0;
+				MARKETING_VERSION = 1.4.0;
 				PRODUCT_NAME = NetPulse;
 				SDKROOT = macosx;
 				SWIFT_VERSION = 5.9;
@@ -348,7 +390,7 @@
 				CURRENT_PROJECT_VERSION = 4;
 				ENABLE_HARDENED_RUNTIME = YES;
 				MACOSX_DEPLOYMENT_TARGET = 12.0;
-				MARKETING_VERSION = 1.3.0;
+				MARKETING_VERSION = 1.4.0;
 				PRODUCT_NAME = NetPulse;
 				SDKROOT = macosx;
 				SWIFT_VERSION = 5.9;

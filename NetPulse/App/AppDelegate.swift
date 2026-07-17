@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 import Combine
 
-final class AppDelegate: NSObject, NSApplicationDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     // MARK: - 属性
     private var statusItem: NSStatusItem?
     private var popover: NSPopover?
@@ -37,6 +37,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return true
     }
 
+    // MARK: - NSApplicationDelegate
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+        return false
+    }
+
     // MARK: - 私有方法
     private func setupServices() {
         let settings = AppSettings.load()
@@ -46,6 +51,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             storageService: StorageService.shared,
             settings: settings
         )
+
+        // 同步登录项状态
+        if settings.launchAtLogin {
+            LoginItemService.shared.enable()
+        }
     }
 
     private func setupStatusItem() {
@@ -88,6 +98,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         ) { [weak self] _ in
             self?.showSettings()
         }
+
+        // 监听设置变更
+        NotificationCenter.default.addObserver(
+            forName: .settingsChanged,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.viewModel.reloadSettings()
+        }
     }
 
     private func setupEventMonitor() {
@@ -104,40 +123,64 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // 使用固定宽度格式确保数字不晃动
         let downSpeed = viewModel.menuBarSpeedText
         let upSpeed = viewModel.menuBarUploadSpeedText
-        
-        // 创建固定宽度的 attributed string（两行显示）
-        let attributedTitle = createFixedWidthSpeedText(down: downSpeed, up: upSpeed)
+        let cpuUsage = CPUMonitorService.shared.getFormattedCPUUsage()
+        let memoryUsage = MemoryMonitorService.shared.getFormattedMemoryUsage()
+        let diskUsage = DiskMonitorService.shared.getFormattedDiskUsage()
+
+        // 创建固定宽度的 attributed string（三行显示）
+        let attributedTitle = createFixedWidthSpeedText(down: downSpeed, up: upSpeed, cpu: cpuUsage, memory: memoryUsage, disk: diskUsage)
         button.attributedTitle = attributedTitle
     }
-    
-    // 创建固定宽度的速度显示（两行）
-    private func createFixedWidthSpeedText(down: String, up: String) -> NSAttributedString {
-        // 使用完全等宽字体（包括单位）
-        let font = NSFont.monospacedSystemFont(ofSize: 8, weight: .medium)
 
-        // 上下行之间加一点间距
-        let line1 = "↑ \(up)"
-        let line2 = "↓ \(down)"
+    // 创建固定宽度的速度显示（两行，左侧上下速度，右侧 CPU、内存、硬盘 信息）
+    private func createFixedWidthSpeedText(down: String, up: String, cpu: String, memory: String, disk: String) -> NSAttributedString {
+        let font = NSFont.monospacedSystemFont(ofSize: 9, weight: .medium)
+
+        // 使用 NSTextTab 固定制表位实现真正的列对齐
+        // 第一列: 0 (左对齐，↑↓速度)
+        // 第二列: 84 (右对齐，CPU数值/标签)
+        // 第三列: 120 (右对齐，内存数值/标签)
+        // 第四列: 144 (左对齐，硬盘数值/标签)
+        let leftTab: CGFloat = 0
+        let cpuTab: CGFloat = 84
+        let memTab: CGFloat = 120
+        let diskTab: CGFloat = 144
+
+        // 创建带制表位的段落样式
+        func createParagraphStyle() -> NSMutableParagraphStyle {
+            let p = NSMutableParagraphStyle()
+            p.tabStops = [
+                NSTextTab(textAlignment: .left, location: leftTab),
+                NSTextTab(textAlignment: .right, location: cpuTab),
+                NSTextTab(textAlignment: .right, location: memTab),
+                NSTextTab(textAlignment: .left, location: diskTab)
+            ]
+            p.defaultTabInterval = cpuTab
+            p.lineHeightMultiple = 0.8
+            return p
+        }
 
         let attrString = NSMutableAttributedString()
 
-        // 上一行整体向上偏移 -4
-        let upAttr = NSAttributedString(string: line1 + "\n", attributes: [
+        // 第一行：↑速度 + \t + CPU数值 + \t + 内存数值 + \t + 硬盘数值
+        let line1 = NSMutableAttributedString(string: "↑ " + up + "\t" + cpu + "\t" + memory + "\t" + disk, attributes: [
             .font: font,
             .foregroundColor: NSColor.textColor,
-            .baselineOffset: -4
+            .baselineOffset: -1,
+            .paragraphStyle: createParagraphStyle()
         ])
+        attrString.append(line1)
+        attrString.append(NSAttributedString(string: "\n"))
 
-        // 下一行整体向上偏移 -4
-        let downAttr = NSAttributedString(string: line2, attributes: [
+        // 第二行：↓速度 + \t + CPU标签 + \t + 内存标签 + \t + 硬盘标签
+        let line2 = NSMutableAttributedString(string: "↓ " + down + "\tCPU\tMEM\tSSD", attributes: [
             .font: font,
             .foregroundColor: NSColor.textColor,
-            .baselineOffset: -4
+            .baselineOffset: -1,
+            .paragraphStyle: createParagraphStyle()
         ])
-        
-        attrString.append(upAttr)
-        attrString.append(downAttr)
-        
+        attrString.append(line2)
+
         return attrString
     }
     
@@ -193,6 +236,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func startMenuBarUpdateTimer() {
+        // 每2秒更新一次网速和CPU
         updateTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
             guard let btn = self?.statusItem?.button else { return }
             self?.updateButton(btn)
@@ -253,6 +297,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func showAbout() {
+        // 如果窗口已存在，只显示到前面
+        if aboutWindow != nil {
+            aboutWindow?.makeKeyAndOrderFront(nil)
+            return
+        }
+
         // 创建自定义关于窗口
         let aboutView = AboutView()
 
@@ -268,17 +318,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         window.isMovableByWindowBackground = true
         window.contentView = NSHostingView(rootView: aboutView)
         window.center()
+
+        // 先设置窗口层级，再显示到前面
+        window.level = .floating
         window.makeKeyAndOrderFront(nil)
 
-        // 设置窗口为浮动层
-        window.level = .floating
-
+        // 使用 delegate 处理窗口关闭
+        window.delegate = self
         aboutWindow = window
     }
 
     @objc private func showSettings() {
-        // 关闭已存在的设置窗口
-        settingsWindow?.close()
+        // 如果窗口已存在，只显示到前面
+        if settingsWindow != nil {
+            settingsWindow?.makeKeyAndOrderFront(nil)
+            return
+        }
 
         let settingsViewModel = SettingsViewModel()
         let settingsView = SettingsView(viewModel: settingsViewModel)
@@ -292,10 +347,37 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         window.title = "设置"
         window.contentView = NSHostingView(rootView: settingsView)
         window.center()
-        window.makeKeyAndOrderFront(nil)
-        window.level = .floating
 
+        // 先设置窗口层级，再显示到前面
+        window.level = .floating
+        window.makeKeyAndOrderFront(nil)
+
+        // 设置窗口不属于主应用窗口
+        window.isReleasedWhenClosed = false
+
+        // 使用 delegate 处理窗口关闭
+        window.delegate = self
         settingsWindow = window
+    }
+
+    // MARK: - NSWindowDelegate
+    func windowShouldClose(_ sender: NSWindow) -> Bool {
+        if sender == settingsWindow {
+            // 隐藏窗口而不是关闭，防止应用退出
+            sender.orderOut(nil)
+            return false
+        }
+        return true
+    }
+
+    func windowWillClose(_ notification: Notification) {
+        if let window = notification.object as? NSWindow {
+            if window == settingsWindow {
+                settingsWindow = nil
+            } else if window == aboutWindow {
+                aboutWindow = nil
+            }
+        }
     }
 
     @objc private func quitApp() {

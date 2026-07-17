@@ -24,10 +24,21 @@ final class NetworkMonitorViewModel: ObservableObject {
     @Published var gatewayAddress: String = "--"
     @Published var signalStrength: String = "--"
     @Published var recentTrafficRecords: [TrafficRecord] = []
+
+    // CPU 使用率
+    @Published var cpuUsageText: String = "0%"
+
+    // 内存使用率
+    @Published var memoryUsageText: String = "0%"
     
     // 流量波型数据
     @Published var speedHistory: [SpeedPoint] = []
-    
+
+    // 菜单栏显示模式
+    @Published var menuBarDisplayMode: AppSettings.MenuBarDisplayMode {
+        didSet { updateMenuBarDisplay() }
+    }
+
     // MARK: - 私有属性
     private let networkService: NetworkMonitorService
     private let storageService: StorageService
@@ -44,6 +55,7 @@ final class NetworkMonitorViewModel: ObservableObject {
         self.networkService = networkService
         self.storageService = storageService
         self.settings = settings
+        self.menuBarDisplayMode = settings.menuBarDisplayMode
         setupBindings()
     }
 
@@ -127,6 +139,12 @@ final class NetworkMonitorViewModel: ObservableObject {
         ipAddress = networkService.currentIPAddress
         gatewayAddress = networkService.gatewayAddress
         signalStrength = networkService.signalStrength
+
+        // 更新 CPU 使用率
+        cpuUsageText = CPUMonitorService.shared.getFormattedCPUUsage()
+
+        // 更新内存使用率
+        memoryUsageText = MemoryMonitorService.shared.getFormattedMemoryUsage()
         
         // 更新速度历史（波型图）
         let newPoint = SpeedPoint(
@@ -148,5 +166,45 @@ final class NetworkMonitorViewModel: ObservableObject {
         if totalUsed >= settings.dailyTrafficLimit {
             NotificationService.shared.sendHighTrafficNotification(usage: ByteFormatter.formatBytes(totalUsed))
         }
+    }
+
+    /// 更新菜单栏显示
+    private func updateMenuBarDisplay() {
+        // 根据显示模式更新菜单栏文字
+        let downSpeed = ByteFormatter.formatSpeedCompact(networkService.currentStats.downloadSpeed)
+        let upSpeed = ByteFormatter.formatSpeedCompact(networkService.currentStats.uploadSpeed)
+        let cpuUsage = CPUMonitorService.shared.getFormattedCPUUsage()
+
+        switch menuBarDisplayMode {
+        case .iconOnly:
+            menuBarIcon = "🦞"
+            menuBarSpeedText = "   0KB"
+            menuBarUploadSpeedText = "   0KB"
+            menuBarDualSpeedText = ""
+        case .iconAndSpeed:
+            menuBarIcon = "🦞"
+            menuBarSpeedText = downSpeed
+            menuBarUploadSpeedText = "   0KB"
+            menuBarDualSpeedText = ""
+        case .iconAndDualSpeed:
+            menuBarIcon = "🦞"
+            menuBarSpeedText = downSpeed
+            menuBarUploadSpeedText = upSpeed
+            menuBarDualSpeedText = "↓\(downSpeed) ↑\(upSpeed)"
+        case .iconWithCPU:
+            menuBarIcon = "🦞"
+            menuBarSpeedText = cpuUsage
+            menuBarUploadSpeedText = "   0KB"
+            menuBarDualSpeedText = ""
+        }
+    }
+
+    /// 重新加载设置（从 UserDefaults）
+    func reloadSettings() {
+        settings = AppSettings.load()
+        // 强制刷新菜单栏显示
+        updateMenuBarDisplay()
+        // 强制触发 willChange 通知
+        objectWillChange.send()
     }
 }

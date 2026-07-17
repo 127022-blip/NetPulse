@@ -79,4 +79,6 @@ let iso8601Formatter: ISO8601DateFormatter = {
 // MARK: - Notification Names
 extension Notification.Name {
     static let openSettings = Notification.Name("com.netpulse.openSettings")
+    static let settingsChanged = Notification.Name("com.netpulse.settingsChanged")
+    static let closeSettings = Notification.Name("com.netpulse.closeSettings")
 }

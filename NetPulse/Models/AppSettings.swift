@@ -43,12 +43,14 @@ struct AppSettings: Codable {
         case iconOnly = 0           // 仅图标
         case iconAndSpeed = 1       // 图标 + 速度
         case iconAndDualSpeed = 2   // 图标 + 上下速度
+        case iconWithCPU = 3        // 图标 + CPU
 
         var displayName: String {
             switch self {
             case .iconOnly: return "仅图标"
             case .iconAndSpeed: return "图标 + 速度"
             case .iconAndDualSpeed: return "图标 + 上下速度"
+            case .iconWithCPU: return "图标 + CPU"
             }
         }
     }

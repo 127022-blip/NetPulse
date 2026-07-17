@@ -41,3 +41,39 @@ targets:
         embed: false
     entitlements:
       path: NetPulse/Resources/NetPulse.entitlements
+    postBuildScripts:
+      - name: "Rename App with Version"
+        script: |
+          # 读取并递增构建计数
+          BUILD_NUM_FILE="${SRCROOT}/build_number.txt"
+          if [ -f "$BUILD_NUM_FILE" ]; then
+            BUILD_NUM=$(cat "$BUILD_NUM_FILE")
+            BUILD_NUM=$((BUILD_NUM + 1))
+          else
+            BUILD_NUM=1
+          fi
+          echo "$BUILD_NUM" > "$BUILD_NUM_FILE"
+
+          # 从 Xcode build settings 获取版本信息
+          MARKETING_VERSION=$(xcodebuild -project "${PROJECT_FILE_PATH}" -target NetPulse -configuration Debug -showBuildSettings 2>/dev/null | grep "MARKETING_VERSION" | head -1 | awk '{print $3}')
+          if [ -z "$MARKETING_VERSION" ]; then
+            MARKETING_VERSION="1.3.0"
+          fi
+          PRODUCT_NAME="NetPulse"
+
+          # 桌面路径
+          DESKTOP_DIR="${HOME}/Desktop"
+          mkdir -p "$DESKTOP_DIR"
+
+          # 复制并重命名 app 到桌面（使用 ditto 替代 cp -R）
+          SRC_APP="${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app"
+          DST_APP="${DESKTOP_DIR}/${PRODUCT_NAME}-${MARKETING_VERSION}-(${BUILD_NUM}).app"
+
+          if [ -d "$SRC_APP" ]; then
+            rm -rf "$DST_APP"
+            cp -Rp "$SRC_APP" "$DST_APP"
+            # 重新签名
+            codesign --force --sign - "$DST_APP"
+            sync
+            echo "✅ Created: $DST_APP"
+          fi

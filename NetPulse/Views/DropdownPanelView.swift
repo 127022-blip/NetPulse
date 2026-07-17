@@ -80,7 +80,7 @@ struct DropdownPanelView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 
                 Divider().frame(height: 30)
-                
+
                 VStack(alignment: .leading, spacing: 4) {
                     Text("信号强度")
                         .font(.system(size: 10))
@@ -251,22 +251,22 @@ struct DropdownPanelView: View {
             // 底部
             HStack {
                 Button(action: {
-                    NSApp.orderFrontStandardAboutPanel(nil)
+                    NotificationCenter.default.post(name: .openSettings, object: nil)
                 }) {
                     HStack(spacing: 4) {
-                        Image(systemName: "info.circle").font(.system(size: 11))
-                        Text("关于").font(.system(size: 11))
+                        Image(systemName: "gear").font(.system(size: 11))
+                        Text("设置").font(.system(size: 11))
                     }
                 }
                 .buttonStyle(.plain)
                 .foregroundColor(.secondary)
 
                 Button(action: {
-                    NotificationCenter.default.post(name: .openSettings, object: nil)
+                    NSApp.orderFrontStandardAboutPanel(nil)
                 }) {
                     HStack(spacing: 4) {
-                        Image(systemName: "gear").font(.system(size: 11))
-                        Text("设置").font(.system(size: 11))
+                        Image(systemName: "info.circle").font(.system(size: 11))
+                        Text("关于").font(.system(size: 11))
                     }
                 }
                 .buttonStyle(.plain)
