@@ -128,23 +128,47 @@ struct NetworkInterface: Identifiable, Hashable {
 }
 
 /// 流量统计记录 (用于历史数据存储)
-struct TrafficRecord: Identifiable, Codable {
-    let id: Int64?
+struct TrafficRecord: Identifiable, Codable, Equatable {
+    var id: UUID
     let date: String          // YYYY-MM-DD 格式
     var downloadBytes: UInt64
     var uploadBytes: UInt64
     var peakDownloadSpeed: Double
     var peakUploadSpeed: Double
-    var createdAt: String  // 修改为 var 以支持更新
+    var createdAt: String
 
-    init(date: String = "", downloadBytes: UInt64 = 0, uploadBytes: UInt64 = 0, peakDownloadSpeed: Double = 0, peakUploadSpeed: Double = 0, createdAt: String = "") {
-        self.id = nil
+    init(id: UUID? = nil, date: String = "", downloadBytes: UInt64 = 0, uploadBytes: UInt64 = 0, peakDownloadSpeed: Double = 0, peakUploadSpeed: Double = 0, createdAt: String = "") {
+        self.id = id ?? UUID()
         self.date = date
         self.downloadBytes = downloadBytes
         self.uploadBytes = uploadBytes
         self.peakDownloadSpeed = peakDownloadSpeed
         self.peakUploadSpeed = peakUploadSpeed
         self.createdAt = createdAt
+    }
+
+    // 自定义 Codable 实现，处理旧数据没有 id 的情况
+    enum CodingKeys: String, CodingKey {
+        case id, date, downloadBytes, uploadBytes, peakDownloadSpeed, peakUploadSpeed, createdAt
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        // 先解码 date（必须）
+        date = try container.decode(String.self, forKey: .date)
+        // 尝试解码 id，如果不存在则用 date 生成稳定的 UUID
+        if let existingId = try? container.decode(UUID.self, forKey: .id) {
+            id = existingId
+        } else {
+            // 用 date 字符串生成确定性的 UUID（每次解码同一 date 得到相同 UUID）
+            let uuidString = "00000000-0000-0000-0000-\(String(format: "%012d", abs(date.hashValue) % 1000000000000))"
+            id = UUID(uuidString: uuidString) ?? UUID()
+        }
+        downloadBytes = try container.decode(UInt64.self, forKey: .downloadBytes)
+        uploadBytes = try container.decode(UInt64.self, forKey: .uploadBytes)
+        peakDownloadSpeed = try container.decode(Double.self, forKey: .peakDownloadSpeed)
+        peakUploadSpeed = try container.decode(Double.self, forKey: .peakUploadSpeed)
+        createdAt = try container.decode(String.self, forKey: .createdAt)
     }
 
     static var today: TrafficRecord {

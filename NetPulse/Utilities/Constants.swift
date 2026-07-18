@@ -15,7 +15,7 @@ enum Constants {
     enum App {
         static let name = "NetPulse"
         static let bundleIdentifier = "com.netpulse.app"
-        static let version = "1.0.0"
+        static let version = "1.4.6"
         static let build = "1"
     }
 

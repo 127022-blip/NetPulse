@@ -14,14 +14,58 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var aboutWindow: NSWindow?
     private var settingsWindow: NSWindow?
 
+    // MARK: - 单实例控制
+    private static let runningApps = NSRunningApplication.runningApplications(withBundleIdentifier: Bundle.main.bundleIdentifier!)
+    
     // MARK: - 应用代理方法
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // 检查是否已有实例在运行
+        let existingApps = NSRunningApplication.runningApplications(withBundleIdentifier: Bundle.main.bundleIdentifier!)
+        if existingApps.count > 1 {
+            print("[NetPulse] 已有实例在运行，退出")
+            NSApp.terminate(nil)
+            return
+        }
+        
         setupServices()
         setupStatusItem()
         setupPopover()
         startMonitoring()
         startMenuBarUpdateTimer()
         setupEventMonitor()
+        setupSleepWakeHandling()
+    }
+    
+    private func setupSleepWakeHandling() {
+        // 监听系统休眠/唤醒通知
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(systemWillSleep),
+            name: NSWorkspace.willSleepNotification,
+            object: nil
+        )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(systemDidWake),
+            name: NSWorkspace.didWakeNotification,
+            object: nil
+        )
+    }
+    
+    @objc private func systemWillSleep() {
+        // 休眠前关闭弹窗
+        if let popover = self.popover, popover.isShown {
+            popover.performClose(nil)
+        }
+    }
+    
+    @objc private func systemDidWake() {
+        // 唤醒后延迟确保系统完全恢复
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+            if let popover = self?.popover, popover.isShown {
+                popover.contentViewController?.view.window?.makeKey()
+            }
+        }
     }
 
     func applicationWillTerminate(_ notification: Notification) {
@@ -35,6 +79,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     func applicationSupportsSecureRestorableState(_ app: NSApplication) -> Bool {
         return true
+    }
+
+    func applicationDidBecomeActive(_ notification: Notification) {
+        // 唤醒后确保弹窗状态正确
+        if let popover = self.popover, popover.isShown {
+            popover.contentViewController?.view.window?.makeKey()
+        }
     }
 
     // MARK: - NSApplicationDelegate
@@ -83,7 +134,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     private func setupPopover() {
         popover = NSPopover()
-        popover?.contentSize = NSSize(width: 340, height: 600)
+        popover?.contentSize = NSSize(width: 340, height: 645)
         popover?.behavior = .transient
         popover?.animates = true
 
@@ -127,59 +178,50 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let memoryUsage = MemoryMonitorService.shared.getFormattedMemoryUsage()
         let diskUsage = DiskMonitorService.shared.getFormattedDiskUsage()
 
-        // 创建固定宽度的 attributed string（三行显示）
+        // 创建固定宽度的 attributed string
         let attributedTitle = createFixedWidthSpeedText(down: downSpeed, up: upSpeed, cpu: cpuUsage, memory: memoryUsage, disk: diskUsage)
         button.attributedTitle = attributedTitle
     }
 
     // 创建固定宽度的速度显示（两行，左侧上下速度，右侧 CPU、内存、硬盘 信息）
     private func createFixedWidthSpeedText(down: String, up: String, cpu: String, memory: String, disk: String) -> NSAttributedString {
-        let font = NSFont.monospacedSystemFont(ofSize: 9, weight: .medium)
+        let font = NSFont.monospacedSystemFont(ofSize: 10, weight: .medium)
 
         // 使用 NSTextTab 固定制表位实现真正的列对齐
-        // 第一列: 0 (左对齐，↑↓速度)
-        // 第二列: 84 (右对齐，CPU数值/标签)
-        // 第三列: 120 (右对齐，内存数值/标签)
-        // 第四列: 144 (左对齐，硬盘数值/标签)
-        let leftTab: CGFloat = 0
-        let cpuTab: CGFloat = 84
-        let memTab: CGFloat = 120
-        let diskTab: CGFloat = 144
+        // 间距 = 前一个数据尾部到后一个数据头部的距离
+        let speedWidth: CGFloat = 36     // 网速文字宽度
+        let cpuWidth: CGFloat = 24       // CPU 文字宽度  
+        let memWidth: CGFloat = 24        // MEM 文字宽度
+        
+        let spacing1: CGFloat = 30        // 网速与 CPU 间距
+        let spacing2: CGFloat = 15        // CPU 与 MEM 间距
+        let spacing3: CGFloat = 20        // MEM 与 SSD 间距
 
         // 创建带制表位的段落样式
+        // Tab位置 = 前一个数据的结束位置 + 间距
+        // 数据结束位置 = Tab对齐位置 - 数据宽度
         func createParagraphStyle() -> NSMutableParagraphStyle {
             let p = NSMutableParagraphStyle()
+            p.alignment = .left
             p.tabStops = [
-                NSTextTab(textAlignment: .left, location: leftTab),
-                NSTextTab(textAlignment: .right, location: cpuTab),
-                NSTextTab(textAlignment: .right, location: memTab),
-                NSTextTab(textAlignment: .left, location: diskTab)
+                NSTextTab(textAlignment: .right, location: speedWidth),  // Tab1: 网速结束位置
+                NSTextTab(textAlignment: .right, location: speedWidth + spacing1 + cpuWidth),  // Tab2: CPU结束位置
+                NSTextTab(textAlignment: .right, location: speedWidth + spacing1 + cpuWidth + spacing2 + memWidth),  // Tab3: MEM结束位置
+                NSTextTab(textAlignment: .left, location: speedWidth + spacing1 + cpuWidth + spacing2 + memWidth + spacing3)  // Tab4: SSD开始位置
             ]
-            p.defaultTabInterval = cpuTab
-            p.lineHeightMultiple = 0.8
+            p.lineHeightMultiple = 0.6
             return p
         }
 
-        let attrString = NSMutableAttributedString()
-
-        // 第一行：↑速度 + \t + CPU数值 + \t + 内存数值 + \t + 硬盘数值
-        let line1 = NSMutableAttributedString(string: "↑ " + up + "\t" + cpu + "\t" + memory + "\t" + disk, attributes: [
+        // 合并两行，用换行符分隔（上下行箭头在文字前）
+        let combinedText = "↑" + up + "\t" + cpu + "\t" + memory + "\t" + disk + "\n" + "↓" + down + "\tCPU\tMEM\tSSD"
+        
+        let attrString = NSMutableAttributedString(string: combinedText, attributes: [
             .font: font,
             .foregroundColor: NSColor.textColor,
-            .baselineOffset: -1,
-            .paragraphStyle: createParagraphStyle()
+            .paragraphStyle: createParagraphStyle(),
+            .baselineOffset: -6
         ])
-        attrString.append(line1)
-        attrString.append(NSAttributedString(string: "\n"))
-
-        // 第二行：↓速度 + \t + CPU标签 + \t + 内存标签 + \t + 硬盘标签
-        let line2 = NSMutableAttributedString(string: "↓ " + down + "\tCPU\tMEM\tSSD", attributes: [
-            .font: font,
-            .foregroundColor: NSColor.textColor,
-            .baselineOffset: -1,
-            .paragraphStyle: createParagraphStyle()
-        ])
-        attrString.append(line2)
 
         return attrString
     }
@@ -246,13 +288,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     // MARK: - 按钮点击事件
     @objc private func statusBarButtonClicked(_ sender: NSStatusBarButton) {
-        guard let event = NSApp.currentEvent else { return }
+        print("[NetPulse] 按钮被点击!")
+        guard let event = NSApp.currentEvent else {
+            print("[NetPulse] 无法获取事件，默认左键行为")
+            togglePopover()
+            return
+        }
 
+        print("[NetPulse] 事件类型: \(event.type)")
         if event.type == .rightMouseUp {
             // 右键显示菜单
+            print("[NetPulse] 显示右键菜单")
             showMenu()
         } else {
             // 左键显示/隐藏面板
+            print("[NetPulse] 切换面板")
             togglePopover()
         }
     }
@@ -267,7 +317,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
         menu.addItem(NSMenuItem.separator())
 
-        let aboutItem = NSMenuItem(title: "关于 NetPulse", action: #selector(showAbout), keyEquivalent: "")
+        let aboutItem = NSMenuItem(title: "关于 NetPulse", action: #selector(showStandardAbout), keyEquivalent: "")
         aboutItem.target = self
         menu.addItem(aboutItem)
 
@@ -285,15 +335,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     @objc private func togglePopover() {
-        guard let button = statusItem?.button else { return }
+        print("[NetPulse] togglePopover 被调用")
+        guard let button = statusItem?.button else {
+            print("[NetPulse] button 不存在")
+            return
+        }
 
         if popover?.isShown == true {
+            print("[NetPulse] 关闭弹窗")
             popover?.performClose(nil)
         } else {
-            // 相对于按钮显示
+            print("[NetPulse] 显示弹窗")
+            // 相对于按钮显示，面板从下方弹出
             popover?.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
             popover?.contentViewController?.view.window?.makeKey()
         }
+    }
+
+    @objc private func showStandardAbout() {
+        // 显示标准关于面板并激活到最前面
+        NSApp.orderFrontStandardAboutPanel(nil)
+        NSApp.activate(ignoringOtherApps: true)
     }
 
     @objc private func showAbout() {

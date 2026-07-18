@@ -64,6 +64,11 @@ final class SettingsViewModel: ObservableObject {
         launchAtLogin = defaultSettings.launchAtLogin
     }
 
+    /// 重置今日流量
+    func resetTodayTraffic() {
+        StorageService.shared.resetTodayTraffic()
+    }
+
     // MARK: - 私有方法
 
     /// 设置数据绑定

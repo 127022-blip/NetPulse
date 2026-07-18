@@ -50,6 +50,9 @@ final class StorageService: ObservableObject {
 
     /// 保存今日流量
     func saveTodayTraffic() {
+        // 每次保存时检查是否需要跨日重置
+        checkAndResetForNewDay()
+        
         userDefaults.set(todayTraffic.downloadBytes, forKey: Constants.UserDefaultsKeys.todayDownloadBytes)
         userDefaults.set(todayTraffic.uploadBytes, forKey: Constants.UserDefaultsKeys.todayUploadBytes)
         userDefaults.set(DateFormatter.yearMonthDay.string(from: Date()), forKey: Constants.UserDefaultsKeys.lastResetDate)

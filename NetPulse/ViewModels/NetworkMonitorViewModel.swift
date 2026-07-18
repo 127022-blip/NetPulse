@@ -97,8 +97,17 @@ final class NetworkMonitorViewModel: ObservableObject {
 
     private func updateUI(with stats: NetworkStats) {
         // 计算增量
-        let deltaIn = stats.totalDownloaded >= previousBytesIn ? stats.totalDownloaded - previousBytesIn : 0
-        let deltaOut = stats.totalUploaded >= previousBytesOut ? stats.totalUploaded - previousBytesOut : 0
+        let deltaIn: UInt64
+        let deltaOut: UInt64
+        
+        // 第一次更新时previousBytesIn为0，直接设为当前值，不计入增量
+        if previousBytesIn == 0 && previousBytesOut == 0 {
+            deltaIn = 0
+            deltaOut = 0
+        } else {
+            deltaIn = stats.totalDownloaded >= previousBytesIn ? stats.totalDownloaded - previousBytesIn : 0
+            deltaOut = stats.totalUploaded >= previousBytesOut ? stats.totalUploaded - previousBytesOut : 0
+        }
 
         // 更新存储
         storageService.updateTodayTraffic(downloaded: deltaIn, uploaded: deltaOut, currentStats: stats)

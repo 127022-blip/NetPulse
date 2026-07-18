@@ -164,13 +164,13 @@ struct DropdownPanelView: View {
             .padding(.horizontal, 16)
             .padding(.top, 8)
 
-            // 今日流量
+            // 总使用流量
             VStack(spacing: 8) {
                 HStack {
                     Image(systemName: "chart.bar.fill")
                         .font(.system(size: 12))
                         .foregroundColor(.accentColor)
-                    Text("今日流量")
+                    Text("总使用流量")
                         .font(.system(size: 12, weight: .medium))
                         .foregroundColor(.secondary)
                     Spacer()

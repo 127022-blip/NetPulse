@@ -3,6 +3,7 @@ import SwiftUI
 /// 设置视图 - 应用设置页面
 struct SettingsView: View {
     @ObservedObject var viewModel: SettingsViewModel
+    @State private var showResetAlert = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -30,11 +31,40 @@ struct SettingsView: View {
                                 .font(.system(size: 13))
                         }
                     }
+
+                    // 数据管理
+                    settingsSection(title: "数据管理", icon: "chart.bar.doc.horizontal") {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Button(action: {
+                                showResetAlert = true
+                            }) {
+                                HStack {
+                                    Image(systemName: "arrow.counterclockwise")
+                                    Text("重置今日流量")
+                                }
+                                .font(.system(size: 13))
+                            }
+                            .buttonStyle(.plain)
+                            .foregroundColor(.red)
+
+                            Text("重置后今日流量统计将从零开始")
+                                .font(.system(size: 11))
+                                .foregroundColor(.secondary)
+                        }
+                    }
                 }
                 .padding()
             }
         }
-        .frame(width: 400, height: 300)
+        .frame(width: 400, height: 350)
+        .alert("确认重置", isPresented: $showResetAlert) {
+            Button("取消", role: .cancel) { }
+            Button("重置", role: .destructive) {
+                viewModel.resetTodayTraffic()
+            }
+        } message: {
+            Text("确定要重置今日流量统计吗？此操作不可撤销。")
+        }
     }
 
     // MARK: - 设置区块视图
