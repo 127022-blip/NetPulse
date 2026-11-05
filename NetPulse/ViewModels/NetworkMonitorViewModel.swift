@@ -93,6 +93,14 @@ final class NetworkMonitorViewModel: ObservableObject {
                 self?.wifiName = name
             }
             .store(in: &cancellables)
+
+        NotificationCenter.default.publisher(for: .networkDidWakeReset)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.previousBytesIn = 0
+                self?.previousBytesOut = 0
+            }
+            .store(in: &cancellables)
     }
 
     private func updateUI(with stats: NetworkStats) {
@@ -123,10 +131,10 @@ final class NetworkMonitorViewModel: ObservableObject {
         isConnected = stats.isConnected
         activeInterfaceName = stats.activeInterface
 
-        // 更新菜单栏 - 始终使用 🦞 图标
+        // 更新菜单栏图标标记（实际「仅图标」由 AppDelegate 使用 AppIcon 渲染）
         menuBarSpeedText = ByteFormatter.formatSpeedCompact(stats.downloadSpeed)
         menuBarUploadSpeedText = ByteFormatter.formatSpeedCompact(stats.uploadSpeed)
-        menuBarIcon = "🦞"
+        menuBarIcon = "app"
 
         // 菜单栏双速度显示: ↓下载速度 ↑上传速度
         let downSpeed = ByteFormatter.formatSpeedCompact(stats.downloadSpeed)
@@ -167,13 +175,24 @@ final class NetworkMonitorViewModel: ObservableObject {
         }
     }
 
-    /// 检查流量限制
+    /// 检查流量限制与慢速告警（通知层自带防抖）
     private func checkTrafficLimit(today: TrafficRecord) {
-        guard settings.trafficAlertEnabled else { return }
+        guard settings.notificationsEnabled else { return }
 
-        let totalUsed = today.downloadBytes + today.uploadBytes
-        if totalUsed >= settings.dailyTrafficLimit {
-            NotificationService.shared.sendHighTrafficNotification(usage: ByteFormatter.formatBytes(totalUsed))
+        if settings.trafficAlertEnabled {
+            let totalUsed = today.downloadBytes + today.uploadBytes
+            if totalUsed >= settings.dailyTrafficLimit {
+                NotificationService.shared.sendHighTrafficNotification(usage: ByteFormatter.formatBytes(totalUsed))
+            }
+        }
+
+        if settings.speedAlertEnabled && networkService.currentStats.isConnected {
+            let down = networkService.currentStats.downloadSpeed
+            if down > 0 && down < settings.speedThreshold {
+                NotificationService.shared.sendSlowSpeedNotification(
+                    speed: ByteFormatter.formatSpeed(down)
+                )
+            }
         }
     }
 
@@ -186,34 +205,45 @@ final class NetworkMonitorViewModel: ObservableObject {
 
         switch menuBarDisplayMode {
         case .iconOnly:
-            menuBarIcon = "🦞"
+            menuBarIcon = "app"
             menuBarSpeedText = "   0KB"
             menuBarUploadSpeedText = "   0KB"
             menuBarDualSpeedText = ""
         case .iconAndSpeed:
-            menuBarIcon = "🦞"
+            menuBarIcon = "app"
             menuBarSpeedText = downSpeed
             menuBarUploadSpeedText = "   0KB"
             menuBarDualSpeedText = ""
         case .iconAndDualSpeed:
-            menuBarIcon = "🦞"
+            menuBarIcon = "app"
+            menuBarSpeedText = downSpeed
+            menuBarUploadSpeedText = upSpeed
+            menuBarDualSpeedText = "↓\(downSpeed) ↑\(upSpeed)"
+        case .iconAndSystem:
+            menuBarIcon = "app"
             menuBarSpeedText = downSpeed
             menuBarUploadSpeedText = upSpeed
             menuBarDualSpeedText = "↓\(downSpeed) ↑\(upSpeed)"
         case .iconWithCPU:
-            menuBarIcon = "🦞"
+            menuBarIcon = "app"
             menuBarSpeedText = cpuUsage
             menuBarUploadSpeedText = "   0KB"
             menuBarDualSpeedText = ""
         }
     }
 
-    /// 重新加载设置（从 UserDefaults）
-    func reloadSettings() {
-        settings = AppSettings.load()
-        // 强制刷新菜单栏显示
+    /// 应用新设置：同步到网络服务并重建相关 Timer，立刻生效
+    func updateSettings(_ newSettings: AppSettings? = nil) {
+        let loaded = newSettings ?? AppSettings.load()
+        settings = loaded
+        menuBarDisplayMode = loaded.menuBarDisplayMode
+        networkService.updateSettings(loaded)
         updateMenuBarDisplay()
-        // 强制触发 willChange 通知
         objectWillChange.send()
+    }
+
+    /// 兼容旧通知入口
+    func reloadSettings() {
+        updateSettings()
     }
 }

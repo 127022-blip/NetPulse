@@ -1,34 +1,88 @@
 import SwiftUI
+import AppKit
+import Combine
 
-/// 下拉面板视图
+/// 面板主题状态（CLT/swiftc 可编译：无 @State）
+private final class PanelThemeState: ObservableObject {
+    @Published var appearanceMode: AppSettings.AppearanceMode
+    private var cancellables = Set<AnyCancellable>()
+
+    init() {
+        self.appearanceMode = AppSettings.load().appearanceMode
+        NotificationCenter.default.publisher(for: .settingsChanged)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.appearanceMode = AppSettings.load().appearanceMode
+            }
+            .store(in: &cancellables)
+    }
+
+    var preferredScheme: ColorScheme? {
+        switch appearanceMode {
+        case .system: return nil
+        case .light: return .light
+        case .dark: return .dark
+        }
+    }
+
+    var themeIconName: String {
+        switch appearanceMode {
+        case .system: return "circle.lefthalf.filled"
+        case .light: return "sun.max.fill"
+        case .dark: return "moon.fill"
+        }
+    }
+
+    func cycleMode() {
+        switch appearanceMode {
+        case .system: appearanceMode = .light
+        case .light: appearanceMode = .dark
+        case .dark: appearanceMode = .system
+        }
+        var s = AppSettings.load()
+        s.appearanceMode = appearanceMode
+        s.save()
+        NotificationCenter.default.post(name: .settingsChanged, object: nil)
+    }
+}
+
+/// 下拉面板视图（CLT/swiftc 可编译：无 @State）
 struct DropdownPanelView: View {
     @ObservedObject var viewModel: NetworkMonitorViewModel
-    @State private var isDarkMode: Bool
+    @ObservedObject private var theme: PanelThemeState
 
     init(viewModel: NetworkMonitorViewModel) {
         self.viewModel = viewModel
-        // 初始化深色模式状态
-        let appearance = NSApp.effectiveAppearance.name
-        _isDarkMode = State(initialValue: appearance == .darkAqua || appearance == .vibrantDark)
+        self.theme = PanelThemeState()
+    }
+
+    private var appIconImage: NSImage {
+        if let icon = NSApp.applicationIconImage, icon.size.width > 0 {
+            return icon
+        }
+        return NSImage(named: NSImage.applicationIconName) ?? NSImage(size: NSSize(width: 18, height: 18))
     }
 
     var body: some View {
         VStack(spacing: 0) {
-            // 标题栏
-            HStack {
-                Image(systemName: "network")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.accentColor)
+            // 标题栏 — AppIcon 品牌
+            HStack(spacing: 8) {
+                Image(nsImage: appIconImage)
+                    .resizable()
+                    .interpolation(.high)
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 18, height: 18)
+                    .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
                 Text("NetPulse")
                     .font(.system(size: 14, weight: .semibold))
                 Spacer()
-                // 深色/浅色模式切换按钮
-                Button(action: toggleDarkMode) {
-                    Image(systemName: isDarkMode ? "sun.max.fill" : "moon.fill")
+                Button(action: { theme.cycleMode() }) {
+                    Image(systemName: theme.themeIconName)
                         .font(.system(size: 12))
                         .foregroundColor(.secondary)
                 }
                 .buttonStyle(.plain)
+                .help("主题：\(theme.appearanceMode.displayName)")
             }
             .padding(.horizontal, 16)
             .padding(.top, 12)
@@ -39,7 +93,7 @@ struct DropdownPanelView: View {
             HStack(spacing: 12) {
                 Image(systemName: viewModel.isConnected ? "wifi" : "wifi.slash")
                     .font(.system(size: 24))
-                    .foregroundColor(viewModel.isConnected ? .green : .red)
+                    .foregroundColor(viewModel.isConnected ? .netPulseGreen : .netPulseRed)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(viewModel.wifiName)
                         .font(.system(size: 13, weight: .medium))
@@ -49,12 +103,11 @@ struct DropdownPanelView: View {
                 }
                 Spacer()
                 Circle()
-                    .fill(viewModel.isConnected ? Color.green : Color.red)
+                    .fill(viewModel.isConnected ? Color.netPulseGreen : Color.netPulseRed)
                     .frame(width: 8, height: 8)
             }
             .padding(12)
-            .background(Color(NSColor.controlBackgroundColor))
-            .cornerRadius(8)
+            .cardStyle()
             .padding(.horizontal, 16)
 
             // 网络详情
@@ -67,9 +120,9 @@ struct DropdownPanelView: View {
                         .font(.system(size: 11, design: .monospaced))
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                
+
                 Divider().frame(height: 30)
-                
+
                 VStack(alignment: .leading, spacing: 4) {
                     Text("网关")
                         .font(.system(size: 10))
@@ -78,7 +131,7 @@ struct DropdownPanelView: View {
                         .font(.system(size: 11, design: .monospaced))
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                
+
                 Divider().frame(height: 30)
 
                 VStack(alignment: .leading, spacing: 4) {
@@ -91,8 +144,7 @@ struct DropdownPanelView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             .padding(12)
-            .background(Color(NSColor.controlBackgroundColor))
-            .cornerRadius(8)
+            .cardStyle()
             .padding(.horizontal, 16)
             .padding(.top, 8)
 
@@ -106,13 +158,13 @@ struct DropdownPanelView: View {
                     VStack(spacing: 4) {
                         Image(systemName: "arrow.down.circle.fill")
                             .font(.system(size: 20))
-                            .foregroundColor(.green)
+                            .foregroundColor(.netPulseGreen)
                         Text("下载")
                             .font(.system(size: 11))
                             .foregroundColor(.secondary)
                         Text(viewModel.downloadSpeedText)
                             .font(.system(size: 14, weight: .semibold, design: .monospaced))
-                            .foregroundColor(.green)
+                            .foregroundColor(.netPulseGreen)
                     }
                     .frame(maxWidth: .infinity)
                     Spacer()
@@ -121,20 +173,19 @@ struct DropdownPanelView: View {
                     VStack(spacing: 4) {
                         Image(systemName: "arrow.up.circle.fill")
                             .font(.system(size: 20))
-                            .foregroundColor(.blue)
+                            .foregroundColor(.netPulseBlue)
                         Text("上传")
                             .font(.system(size: 11))
                             .foregroundColor(.secondary)
                         Text(viewModel.uploadSpeedText)
                             .font(.system(size: 14, weight: .semibold, design: .monospaced))
-                            .foregroundColor(.blue)
+                            .foregroundColor(.netPulseBlue)
                     }
                     .frame(maxWidth: .infinity)
                 }
             }
             .padding(12)
-            .background(Color(NSColor.controlBackgroundColor))
-            .cornerRadius(8)
+            .cardStyle()
             .padding(.horizontal, 16)
             .padding(.top, 8)
 
@@ -146,21 +197,20 @@ struct DropdownPanelView: View {
                         .foregroundColor(.secondary)
                     Spacer()
                     HStack(spacing: 8) {
-                        Circle().fill(Color.green).frame(width: 6, height: 6)
+                        Circle().fill(Color.netPulseGreen).frame(width: 6, height: 6)
                         Text("下载").font(.system(size: 9)).foregroundColor(.secondary)
-                        Circle().fill(Color.blue).frame(width: 6, height: 6)
+                        Circle().fill(Color.netPulseBlue).frame(width: 6, height: 6)
                         Text("上传").font(.system(size: 9)).foregroundColor(.secondary)
                     }
                 }
-                
+
                 SpeedWaveformView(
                     downloadHistory: viewModel.speedHistory.map { $0.downloadSpeed / 1024 },
                     uploadHistory: viewModel.speedHistory.map { $0.uploadSpeed / 1024 }
                 )
             }
             .padding(12)
-            .background(Color(NSColor.controlBackgroundColor))
-            .cornerRadius(8)
+            .cardStyle()
             .padding(.horizontal, 16)
             .padding(.top, 8)
 
@@ -179,7 +229,7 @@ struct DropdownPanelView: View {
                     HStack(spacing: 6) {
                         Image(systemName: "arrow.down")
                             .font(.system(size: 10))
-                            .foregroundColor(.green)
+                            .foregroundColor(.netPulseGreen)
                         VStack(alignment: .leading, spacing: 1) {
                             Text("下载")
                                 .font(.system(size: 10))
@@ -191,7 +241,7 @@ struct DropdownPanelView: View {
                     HStack(spacing: 6) {
                         Image(systemName: "arrow.up")
                             .font(.system(size: 10))
-                            .foregroundColor(.blue)
+                            .foregroundColor(.netPulseBlue)
                         VStack(alignment: .leading, spacing: 1) {
                             Text("上传")
                                 .font(.system(size: 10))
@@ -204,8 +254,7 @@ struct DropdownPanelView: View {
                 }
             }
             .padding(12)
-            .background(Color(NSColor.controlBackgroundColor))
-            .cornerRadius(8)
+            .cardStyle()
             .padding(.horizontal, 16)
             .padding(.top, 8)
 
@@ -220,29 +269,36 @@ struct DropdownPanelView: View {
                         .foregroundColor(.secondary)
                     Spacer()
                 }
-                
-                ForEach(viewModel.recentTrafficRecords.prefix(5)) { record in
-                    HStack {
-                        Text(record.date)
-                            .font(.system(size: 10))
-                            .foregroundColor(.secondary)
-                        Spacer()
-                        HStack(spacing: 4) {
-                            Image(systemName: "arrow.down").font(.system(size: 8)).foregroundColor(.green)
-                            Text(formatHistoryBytes(record.downloadBytes))
-                                .font(.system(size: 10, design: .monospaced))
-                        }
-                        HStack(spacing: 4) {
-                            Image(systemName: "arrow.up").font(.system(size: 8)).foregroundColor(.blue)
-                            Text(formatHistoryBytes(record.uploadBytes))
-                                .font(.system(size: 10, design: .monospaced))
+
+                if viewModel.recentTrafficRecords.isEmpty {
+                    Text("暂无历史")
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.vertical, 6)
+                } else {
+                    ForEach(viewModel.recentTrafficRecords.prefix(5)) { record in
+                        HStack {
+                            Text(record.date)
+                                .font(.system(size: 10))
+                                .foregroundColor(.secondary)
+                            Spacer()
+                            HStack(spacing: 4) {
+                                Image(systemName: "arrow.down").font(.system(size: 8)).foregroundColor(.netPulseGreen)
+                                Text(formatHistoryBytes(record.downloadBytes))
+                                    .font(.system(size: 10, design: .monospaced))
+                            }
+                            HStack(spacing: 4) {
+                                Image(systemName: "arrow.up").font(.system(size: 8)).foregroundColor(.netPulseBlue)
+                                Text(formatHistoryBytes(record.uploadBytes))
+                                    .font(.system(size: 10, design: .monospaced))
+                            }
                         }
                     }
                 }
             }
             .padding(12)
-            .background(Color(NSColor.controlBackgroundColor))
-            .cornerRadius(8)
+            .cardStyle()
             .padding(.horizontal, 16)
             .padding(.top, 8)
 
@@ -262,7 +318,7 @@ struct DropdownPanelView: View {
                 .foregroundColor(.secondary)
 
                 Button(action: {
-                    NSApp.orderFrontStandardAboutPanel(nil)
+                    NotificationCenter.default.post(name: .openAbout, object: nil)
                 }) {
                     HStack(spacing: 4) {
                         Image(systemName: "info.circle").font(.system(size: 11))
@@ -283,24 +339,16 @@ struct DropdownPanelView: View {
                     }
                 }
                 .buttonStyle(.plain)
-                .foregroundColor(.secondary)
+                .foregroundColor(.netPulseRed)
             }
             .padding(.horizontal, 16)
             .padding(.bottom, 12)
         }
-        .frame(width: 340)
+        .frame(width: Constants.UI.panelWidth)
         .background(Color(NSColor.windowBackgroundColor))
-        .preferredColorScheme(isDarkMode ? .dark : .light)
-    }
-    
-    // MARK: - Helper Methods
-
-    /// 切换深色/浅色模式
-    private func toggleDarkMode() {
-        isDarkMode.toggle()
+        .preferredColorScheme(theme.preferredScheme)
     }
 
-    /// 格式化历史流量字节数
     private func formatHistoryBytes(_ bytes: UInt64) -> String {
         if bytes >= 1024 * 1024 * 1024 {
             return String(format: "%.1fGB", Double(bytes) / (1024 * 1024 * 1024))
