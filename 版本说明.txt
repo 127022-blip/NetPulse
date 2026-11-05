@@ -1,0 +1,27 @@
+NetPulse 2.0.31 版本说明
+构建时间：20261105-2142（Asia/Shanghai）
+版本：2.0.31 / build 231
+基线：NetPulse-2.0.30-20261105-2137
+
+变更（CoreText 真墨迹垂直居中）：
+- 主人反馈 2.0.30 双行相对菜单栏/系统时钟仍视觉偏上约 3pt
+- 根因：boundingRect + usesFontLeading 把行高估高，按过大矩形居中后墨迹仍靠上
+- StatusBarCenteredLabelView 改为 CoreText：
+  · CTFramesetterSuggestFrameSizeWithConstraints 估排版尺寸
+  · CTFrameGetLines + CTLineGetImageBounds 合并真实字形墨迹盒
+  · 墨迹几何中心对齐 NSStatusBar.system.thickness / button.bounds 画布中心
+  · 光学补偿整体下移 1.5pt
+- 禁止再使用 NSString.boundingRect + usesFontLeading 估高
+- 离屏兜底 makeCenteredStatusImage 同步 CoreText 策略
+- 字号仍为 2.0.23：双速/系统 10、标签 9、单速 11；lineHeightMultiple=0.85 保留
+
+交付命名：可执行程序 NetPulse-2.0.31.app
+
+未改动：
+- 「网速脉动」目录未触碰
+- 未推送 GitHub / NAS
+
+自检（Asia/Shanghai 2026-11-05 21:44）：
+- 本机截菜单栏 thickness=22pt 右上双行（iconAndSystem）
+- 像素：NetPulse 墨迹中线 vs 系统时钟中线 ≈ -0.25pt（基本对齐）
+- 截图：status-bar-dual-verify.png / status-bar-dual-verify-x3.png

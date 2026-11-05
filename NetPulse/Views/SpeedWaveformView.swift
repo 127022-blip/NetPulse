@@ -11,12 +11,12 @@ struct SpeedWaveformView: View {
         GeometryReader { geometry in
             ZStack {
                 // 下载速度波型（绿色）
-                WaveformShape(data: downloadHistory, color: .green)
-                    .fill(Color.green.opacity(0.6))
+                WaveformShape(data: downloadHistory, color: .netPulseGreen)
+                    .fill(Color.netPulseGreen.opacity(0.6))
                 
                 // 上传速度波型（蓝色）
-                WaveformShape(data: uploadHistory, color: .blue)
-                    .fill(Color.blue.opacity(0.4))
+                WaveformShape(data: uploadHistory, color: .netPulseBlue)
+                    .fill(Color.netPulseBlue.opacity(0.4))
                 
                 // 网格线
                 GridLines()

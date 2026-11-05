@@ -19,9 +19,9 @@
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
-    <string>$(MARKETING_VERSION)</string>
+    <string>2.0.31</string>
     <key>CFBundleVersion</key>
-    <string>$(CURRENT_PROJECT_VERSION)</string>
+    <string>231</string>
     <key>LSApplicationCategoryType</key>
     <string>public.app-category.utilities</string>
     <key>LSMinimumSystemVersion</key>
@@ -36,5 +36,9 @@
     <string>NSApplication</string>
     <key>NSUserNotificationAlertStyle</key>
     <string>banner</string>
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>NetPulse 需要位置权限以读取当前 Wi‑Fi 名称（SSID）。关闭权限时仍会显示网卡接口名，不影响网速统计。</string>
+    <key>NSLocationUsageDescription</key>
+    <string>NetPulse 需要位置权限以读取当前 Wi‑Fi 名称（SSID）。关闭权限时仍会显示网卡接口名，不影响网速统计。</string>
 </dict>
 </plist>

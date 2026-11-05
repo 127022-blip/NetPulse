@@ -1,43 +1,44 @@
 import AppKit
+import CoreText
 import SwiftUI
 import Combine
 
 final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     // MARK: - 属性
     private var statusItem: NSStatusItem?
+    private var statusLabelView: StatusBarCenteredLabelView?
     private var popover: NSPopover?
     private var viewModel: NetworkMonitorViewModel!
     private var networkService: NetworkMonitorService!
-    private var updateTimer: Timer?
     private var cancellables = Set<AnyCancellable>()
     private var eventMonitor: Any?
     private var aboutWindow: NSWindow?
     private var settingsWindow: NSWindow?
 
-    // MARK: - 单实例控制
-    private static let runningApps = NSRunningApplication.runningApplications(withBundleIdentifier: Bundle.main.bundleIdentifier!)
-    
     // MARK: - 应用代理方法
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // 检查是否已有实例在运行
         let existingApps = NSRunningApplication.runningApplications(withBundleIdentifier: Bundle.main.bundleIdentifier!)
         if existingApps.count > 1 {
             print("[NetPulse] 已有实例在运行，退出")
             NSApp.terminate(nil)
             return
         }
-        
+
         setupServices()
         setupStatusItem()
         setupPopover()
         startMonitoring()
-        startMenuBarUpdateTimer()
-        setupEventMonitor()
+        // 不再在启动时挂全局鼠标 monitor；popover 显示时再挂
         setupSleepWakeHandling()
+
+        if ProcessInfo.processInfo.arguments.contains("--show-about") {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in
+                self?.showAbout()
+            }
+        }
     }
-    
+
     private func setupSleepWakeHandling() {
-        // 监听系统休眠/唤醒通知
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(systemWillSleep),
@@ -51,19 +52,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             object: nil
         )
     }
-    
+
     @objc private func systemWillSleep() {
-        // 休眠前关闭弹窗
         if let popover = self.popover, popover.isShown {
             popover.performClose(nil)
         }
+        removeEventMonitor()
+        networkService?.pauseForSleep()
     }
-    
+
     @objc private func systemDidWake() {
-        // 唤醒后延迟确保系统完全恢复
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
-            if let popover = self?.popover, popover.isShown {
+            guard let self = self else { return }
+            self.networkService?.resumeAfterWake()
+            if let popover = self.popover, popover.isShown {
                 popover.contentViewController?.view.window?.makeKey()
+            }
+            if let btn = self.statusItem?.button {
+                self.updateButton(btn)
             }
         }
     }
@@ -71,10 +77,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     func applicationWillTerminate(_ notification: Notification) {
         viewModel?.stopMonitoring()
         StorageService.shared.saveTodayTraffic()
-        updateTimer?.invalidate()
-        if let monitor = eventMonitor {
-            NSEvent.removeMonitor(monitor)
-        }
+        removeEventMonitor()
     }
 
     func applicationSupportsSecureRestorableState(_ app: NSApplication) -> Bool {
@@ -82,13 +85,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     func applicationDidBecomeActive(_ notification: Notification) {
-        // 唤醒后确保弹窗状态正确
         if let popover = self.popover, popover.isShown {
             popover.contentViewController?.view.window?.makeKey()
         }
     }
 
-    // MARK: - NSApplicationDelegate
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         return false
     }
@@ -103,7 +104,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             settings: settings
         )
 
-        // 同步登录项状态
         if settings.launchAtLogin {
             LoginItemService.shared.enable()
         }
@@ -114,19 +114,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
         guard let button = statusItem?.button else { return }
 
+        // 自定义居中文字视图（按 bounds 垂直居中绘制）
+        let label = StatusBarCenteredLabelView(frame: .zero)
+        label.autoresizingMask = [.width, .height]
+        button.addSubview(label)
+        statusLabelView = label
+
         updateButton(button)
 
-        // 监听视图模型变化
+        // 合并状态栏刷新：多个 Published 合成一次 updateButton，避免同拍重复绘制
         viewModel.$menuBarIcon
-            .combineLatest(viewModel.$menuBarDualSpeedText)
+            .combineLatest(
+                viewModel.$menuBarSpeedText,
+                viewModel.$menuBarUploadSpeedText,
+                viewModel.$menuBarDualSpeedText
+            )
+            .combineLatest(viewModel.$menuBarDisplayMode, viewModel.$cpuUsageText)
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] icon, dualSpeed in
+            .sink { [weak self] _, _, _ in
                 guard let btn = self?.statusItem?.button else { return }
-                self?.updateButton(btn, icon: icon, dualSpeed: dualSpeed)
+                self?.updateButton(btn)
             }
             .store(in: &cancellables)
 
-        // 设置按钮点击
         button.target = self
         button.action = #selector(statusBarButtonClicked(_:))
         button.sendAction(on: [.leftMouseUp, .rightMouseUp])
@@ -134,14 +144,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     private func setupPopover() {
         popover = NSPopover()
-        popover?.contentSize = NSSize(width: 340, height: 645)
+        popover?.contentSize = NSSize(width: Constants.UI.panelWidth, height: 645)
         popover?.behavior = .transient
         popover?.animates = true
 
         let contentView = DropdownPanelView(viewModel: viewModel)
         popover?.contentViewController = NSHostingController(rootView: contentView)
 
-        // 监听设置通知
         NotificationCenter.default.addObserver(
             forName: .openSettings,
             object: nil,
@@ -150,140 +159,275 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             self?.showSettings()
         }
 
-        // 监听设置变更
+        NotificationCenter.default.addObserver(
+            forName: .openAbout,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.showAbout()
+        }
+
         NotificationCenter.default.addObserver(
             forName: .settingsChanged,
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            self?.viewModel.reloadSettings()
-        }
-    }
-
-    private func setupEventMonitor() {
-        eventMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown]) { [weak self] event in
-            if let popover = self?.popover, popover.isShown {
-                popover.performClose(nil)
+            self?.viewModel.updateSettings()
+            if let btn = self?.statusItem?.button {
+                self?.updateButton(btn)
             }
         }
     }
 
-    private func updateButton(_ button: NSStatusBarButton, icon: String? = nil, speed: String? = nil, dualSpeed: String? = nil) {
-        button.image = nil  // 不显示图标
+    private func installEventMonitor() {
+        guard eventMonitor == nil else { return }
+        eventMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown]) { [weak self] _ in
+            if let popover = self?.popover, popover.isShown {
+                popover.performClose(nil)
+                self?.removeEventMonitor()
+            }
+        }
+    }
 
-        // 使用固定宽度格式确保数字不晃动
+    private func removeEventMonitor() {
+        if let monitor = eventMonitor {
+            NSEvent.removeMonitor(monitor)
+            eventMonitor = nil
+        }
+    }
+
+    private func menuBarAppIcon() -> NSImage {
+        let size = Constants.UI.menuBarIconSize
+        let source = NSApp.applicationIconImage
+            ?? NSImage(named: NSImage.applicationIconName)
+            ?? NSImage(size: NSSize(width: size, height: size))
+        let img = NSImage(size: NSSize(width: size, height: size))
+        img.lockFocus()
+        NSGraphicsContext.current?.imageInterpolation = .high
+        source.draw(
+            in: NSRect(x: 0, y: 0, width: size, height: size),
+            from: .zero,
+            operation: .sourceOver,
+            fraction: 1.0
+        )
+        img.unlockFocus()
+        img.isTemplate = true
+        return img
+    }
+
+    private func updateButton(_ button: NSStatusBarButton) {
+        let mode = viewModel.menuBarDisplayMode
         let downSpeed = viewModel.menuBarSpeedText
         let upSpeed = viewModel.menuBarUploadSpeedText
         let cpuUsage = CPUMonitorService.shared.getFormattedCPUUsage()
         let memoryUsage = MemoryMonitorService.shared.getFormattedMemoryUsage()
         let diskUsage = DiskMonitorService.shared.getFormattedDiskUsage()
 
-        // 创建固定宽度的 attributed string
-        let attributedTitle = createFixedWidthSpeedText(down: downSpeed, up: upSpeed, cpu: cpuUsage, memory: memoryUsage, disk: diskUsage)
-        button.attributedTitle = attributedTitle
+        let downColor = NSColor(hex: "34C759") // netPulseGreen
+        let upColor = NSColor(hex: "007AFF")   // netPulseBlue
+
+        // 清空 button 原生 title，改由自定义视图 / image 绘制，避免 attributedTitle 偏上
+        button.attributedTitle = NSAttributedString(string: "")
+        button.title = ""
+
+        switch mode {
+        case .iconOnly:
+            statusLabelView?.isHidden = true
+            statusLabelView?.attributedText = NSAttributedString(string: "")
+            button.image = menuBarAppIcon()
+            button.imagePosition = .imageOnly
+            statusItem?.length = NSStatusItem.variableLength
+        case .iconAndSpeed:
+            button.image = nil
+            let font = NSFont.monospacedSystemFont(ofSize: 11, weight: .medium)
+            let attr = NSAttributedString(string: "↓\(downSpeed)", attributes: [
+                .font: font,
+                .foregroundColor: downColor
+            ])
+            applyCenteredStatusText(attr, on: button)
+        case .iconWithCPU:
+            button.image = nil
+            let font = NSFont.monospacedSystemFont(ofSize: 11, weight: .medium)
+            let attr = NSAttributedString(string: "CPU \(cpuUsage)", attributes: [
+                .font: font,
+                .foregroundColor: NSColor.textColor
+            ])
+            applyCenteredStatusText(attr, on: button)
+        case .iconAndDualSpeed:
+            button.image = nil
+            applyCenteredStatusText(
+                createDualSpeedText(down: downSpeed, up: upSpeed, downColor: downColor, upColor: upColor),
+                on: button
+            )
+        case .iconAndSystem:
+            button.image = nil
+            applyCenteredStatusText(
+                createFixedWidthSpeedText(
+                    down: downSpeed, up: upSpeed, cpu: cpuUsage, memory: memoryUsage, disk: diskUsage,
+                    downColor: downColor, upColor: upColor
+                ),
+                on: button
+            )
+        }
     }
 
-    // 创建固定宽度的速度显示（两行，左侧上下速度，右侧 CPU、内存、硬盘 信息）
-    private func createFixedWidthSpeedText(down: String, up: String, cpu: String, memory: String, disk: String) -> NSAttributedString {
-        let font = NSFont.monospacedSystemFont(ofSize: 10, weight: .medium)
-
-        // 使用 NSTextTab 固定制表位实现真正的列对齐
-        // 间距 = 前一个数据尾部到后一个数据头部的距离
-        let speedWidth: CGFloat = 36     // 网速文字宽度
-        let cpuWidth: CGFloat = 24       // CPU 文字宽度  
-        let memWidth: CGFloat = 24        // MEM 文字宽度
-        
-        let spacing1: CGFloat = 30        // 网速与 CPU 间距
-        let spacing2: CGFloat = 15        // CPU 与 MEM 间距
-        let spacing3: CGFloat = 20        // MEM 与 SSD 间距
-
-        // 创建带制表位的段落样式
-        // Tab位置 = 前一个数据的结束位置 + 间距
-        // 数据结束位置 = Tab对齐位置 - 数据宽度
-        func createParagraphStyle() -> NSMutableParagraphStyle {
-            let p = NSMutableParagraphStyle()
-            p.alignment = .left
-            p.tabStops = [
-                NSTextTab(textAlignment: .right, location: speedWidth),  // Tab1: 网速结束位置
-                NSTextTab(textAlignment: .right, location: speedWidth + spacing1 + cpuWidth),  // Tab2: CPU结束位置
-                NSTextTab(textAlignment: .right, location: speedWidth + spacing1 + cpuWidth + spacing2 + memWidth),  // Tab3: MEM结束位置
-                NSTextTab(textAlignment: .left, location: speedWidth + spacing1 + cpuWidth + spacing2 + memWidth + spacing3)  // Tab4: SSD开始位置
-            ]
-            p.lineHeightMultiple = 0.6
-            return p
+    /// 将 attributed 文字交给 StatusBarCenteredLabelView，按 status bar 高度垂直居中绘制。
+    private func applyCenteredStatusText(_ attr: NSAttributedString, on button: NSStatusBarButton) {
+        guard let label = statusLabelView else {
+            // 兜底：离屏 image 垂直居中（同方案）
+            button.image = makeCenteredStatusImage(from: attr)
+            button.imagePosition = .imageOnly
+            button.imageScaling = .scaleNone
+            statusItem?.length = NSStatusItem.variableLength
+            return
         }
+        label.isHidden = false
+        label.attributedText = attr
+        let size = label.intrinsicContentSize
+        let barH = button.bounds.height > 1 ? button.bounds.height : NSStatusBar.system.thickness
+        label.frame = NSRect(x: 0, y: 0, width: size.width, height: barH)
+        statusItem?.length = size.width
+        label.needsDisplay = true
+    }
 
-        // 合并两行，用换行符分隔（上下行箭头在文字前）
-        let combinedText = "↑" + up + "\t" + cpu + "\t" + memory + "\t" + disk + "\n" + "↓" + down + "\tCPU\tMEM\tSSD"
-        
-        let attrString = NSMutableAttributedString(string: combinedText, attributes: [
+    /// 离屏绘制：CoreText 墨迹垂直居中（备用 / 兜底），与 StatusBarCenteredLabelView 同策略。
+    private func makeCenteredStatusImage(from attr: NSAttributedString) -> NSImage {
+        let barH = NSStatusBar.system.thickness
+        let opticalNudgeDown: CGFloat = 1.5
+        let pad: CGFloat = 2
+
+        let ctAttr = StatusBarCenteredLabelView.makeCTAttributedString(from: attr)
+        let framesetter = CTFramesetterCreateWithAttributedString(ctAttr)
+        var fitRange = CFRange(location: 0, length: 0)
+        let suggest = CTFramesetterSuggestFrameSizeWithConstraints(
+            framesetter,
+            CFRange(location: 0, length: 0),
+            nil,
+            CGSize(width: 4000, height: CGFloat.greatestFiniteMagnitude),
+            &fitRange
+        )
+        let width = max(ceil(suggest.width) + pad * 2, 12)
+        let layoutH = max(ceil(suggest.height), 1)
+        let layoutW = max(width - pad * 2, 1)
+
+        let measurePath = CGPath(rect: CGRect(x: 0, y: 0, width: layoutW, height: layoutH), transform: nil)
+        let measureFrame = CTFramesetterCreateFrame(framesetter, CFRange(location: 0, length: 0), measurePath, nil)
+        let ink = StatusBarCenteredLabelView.unionImageBounds(of: measureFrame)
+        let inkMidY: CGFloat = (ink.isNull || ink.height < 0.5) ? (layoutH / 2.0) : ink.midY
+        let targetInkMidY = barH / 2.0 - opticalNudgeDown
+        let pathOriginY = targetInkMidY - inkMidY
+
+        let size = NSSize(width: width, height: barH)
+        let image = NSImage(size: size)
+        image.lockFocus()
+        if let ctx = NSGraphicsContext.current?.cgContext {
+            ctx.textMatrix = .identity
+            let drawPath = CGPath(
+                rect: CGRect(x: pad, y: pathOriginY, width: layoutW, height: layoutH),
+                transform: nil
+            )
+            let drawFrame = CTFramesetterCreateFrame(framesetter, CFRange(location: 0, length: 0), drawPath, nil)
+            CTFrameDraw(drawFrame, ctx)
+        }
+        image.unlockFocus()
+        image.isTemplate = false
+        return image
+    }
+
+    private func makeStatusBarParagraphStyle(tabStops: [NSTextTab]? = nil) -> NSMutableParagraphStyle {
+        let para = NSMutableParagraphStyle()
+        para.alignment = .left
+        // 紧凑行距；不再用过紧的 max/min line height（易导致视觉偏上）
+        para.lineHeightMultiple = 0.85
+        para.lineSpacing = 0
+        if let tabStops {
+            para.tabStops = tabStops
+        }
+        return para
+    }
+
+    private func createDualSpeedText(down: String, up: String, downColor: NSColor, upColor: NSColor) -> NSAttributedString {
+        let font = NSFont.monospacedSystemFont(ofSize: 10, weight: .medium)
+        let para = makeStatusBarParagraphStyle()
+
+        let result = NSMutableAttributedString()
+        result.append(NSAttributedString(string: "↑\(up)", attributes: [
             .font: font,
-            .foregroundColor: NSColor.textColor,
-            .paragraphStyle: createParagraphStyle(),
-            .baselineOffset: -6
+            .foregroundColor: upColor,
+            .paragraphStyle: para
+        ]))
+        result.append(NSAttributedString(string: "\n", attributes: [
+            .font: font,
+            .paragraphStyle: para
+        ]))
+        result.append(NSAttributedString(string: "↓\(down)", attributes: [
+            .font: font,
+            .foregroundColor: downColor,
+            .paragraphStyle: para
+        ]))
+        return result
+    }
+
+    // 两行：左侧上下速度（着色），右侧 CPU / MEM / SSD 标签；整块由自定义视图垂直居中
+    private func createFixedWidthSpeedText(
+        down: String, up: String, cpu: String, memory: String, disk: String,
+        downColor: NSColor, upColor: NSColor
+    ) -> NSAttributedString {
+        let font = NSFont.monospacedSystemFont(ofSize: 10, weight: .medium)
+        let labelFont = NSFont.monospacedSystemFont(ofSize: 9, weight: .regular)
+
+        let speedWidth: CGFloat = 40
+        let cpuWidth: CGFloat = 26
+        let memWidth: CGFloat = 26
+
+        let spacing1: CGFloat = 28
+        let spacing2: CGFloat = 14
+        let spacing3: CGFloat = 18
+
+        let para = makeStatusBarParagraphStyle(tabStops: [
+            NSTextTab(textAlignment: .right, location: speedWidth),
+            NSTextTab(textAlignment: .right, location: speedWidth + spacing1 + cpuWidth),
+            NSTextTab(textAlignment: .right, location: speedWidth + spacing1 + cpuWidth + spacing2 + memWidth),
+            NSTextTab(textAlignment: .left, location: speedWidth + spacing1 + cpuWidth + spacing2 + memWidth + spacing3)
         ])
 
-        return attrString
-    }
-    
-    // 创建垂直居中的 emoji 图片
-    private func createCenteredEmojiImage(_ emoji: String) -> NSImage {
-        // 使用状态栏标准高度，让系统自动处理垂直居中
-        let size = NSSize(width: 22, height: 22)
-        let image = NSImage(size: size)
-        image.lockFocus()
-        
-        let font = NSFont.systemFont(ofSize: 14)
-        let attrs: [NSAttributedString.Key: Any] = [
-            .font: font,
-            .foregroundColor: NSColor.textColor
-        ]
-        let attrString = NSAttributedString(string: emoji, attributes: attrs)
-        let stringSize = attrString.size()
-        // 居中放置，y坐标稍往下让两行文字更居中
-        let point = NSPoint(
-            x: (size.width - stringSize.width) / 2,
-            y: (size.height - stringSize.height) / 2 + 1
-        )
-        attrString.draw(at: point)
-        image.unlockFocus()
-        return image
-    }
+        let secondary = NSColor.secondaryLabelColor
+        let primary = NSColor.textColor
 
-    // 创建 emoji 图片
-    private func createEmojiImage(_ emoji: String) -> NSImage {
-        let size = NSSize(width: 18, height: 18)
-        let image = NSImage(size: size)
-        image.lockFocus()
+        let result = NSMutableAttributedString()
 
-        let font = NSFont.systemFont(ofSize: 14)
-        let attrs: [NSAttributedString.Key: Any] = [
+        // Line 1: ↑up \t cpuVal \t memVal \t diskVal
+        let line1Base: [NSAttributedString.Key: Any] = [
             .font: font,
-            .foregroundColor: NSColor.textColor
+            .foregroundColor: primary,
+            .paragraphStyle: para
         ]
-        let attrString = NSAttributedString(string: emoji, attributes: attrs)
-        let stringSize = attrString.size()
-        let point = NSPoint(
-            x: (size.width - stringSize.width) / 2,
-            y: (size.height - stringSize.height) / 2
-        )
-        attrString.draw(at: point)
-        image.unlockFocus()
-        return image
+        let upAttr = NSMutableAttributedString(string: "↑\(up)", attributes: line1Base)
+        upAttr.addAttribute(.foregroundColor, value: upColor, range: NSRange(location: 0, length: upAttr.length))
+        result.append(upAttr)
+        result.append(NSAttributedString(string: "\t\(cpu)\t\(memory)\t\(disk)", attributes: line1Base))
+        result.append(NSAttributedString(string: "\n", attributes: line1Base))
+
+        // Line 2: ↓down \t CPU \t MEM \t SSD
+        let downAttr = NSMutableAttributedString(string: "↓\(down)", attributes: [
+            .font: font,
+            .foregroundColor: downColor,
+            .paragraphStyle: para
+        ])
+        result.append(downAttr)
+        let labels = NSAttributedString(string: "\tCPU\tMEM\tSSD", attributes: [
+            .font: labelFont,
+            .foregroundColor: secondary,
+            .paragraphStyle: para
+        ])
+        result.append(labels)
+
+        return result
     }
 
     private func startMonitoring() {
         NotificationService.shared.requestAuthorization()
         viewModel.startMonitoring()
-    }
-
-    private func startMenuBarUpdateTimer() {
-        // 每2秒更新一次网速和CPU
-        updateTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
-            guard let btn = self?.statusItem?.button else { return }
-            self?.updateButton(btn)
-        }
-        RunLoop.main.add(updateTimer!, forMode: .common)
     }
 
     // MARK: - 按钮点击事件
@@ -297,11 +441,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
         print("[NetPulse] 事件类型: \(event.type)")
         if event.type == .rightMouseUp {
-            // 右键显示菜单
             print("[NetPulse] 显示右键菜单")
             showMenu()
         } else {
-            // 左键显示/隐藏面板
             print("[NetPulse] 切换面板")
             togglePopover()
         }
@@ -317,7 +459,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
         menu.addItem(NSMenuItem.separator())
 
-        let aboutItem = NSMenuItem(title: "关于 NetPulse", action: #selector(showStandardAbout), keyEquivalent: "")
+        let aboutItem = NSMenuItem(title: "关于 NetPulse", action: #selector(showAbout), keyEquivalent: "")
         aboutItem.target = self
         menu.addItem(aboutItem)
 
@@ -344,28 +486,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         if popover?.isShown == true {
             print("[NetPulse] 关闭弹窗")
             popover?.performClose(nil)
+            removeEventMonitor()
         } else {
             print("[NetPulse] 显示弹窗")
-            // 相对于按钮显示，面板从下方弹出
             popover?.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
             popover?.contentViewController?.view.window?.makeKey()
+            installEventMonitor()
         }
-    }
-
-    @objc private func showStandardAbout() {
-        // 显示标准关于面板并激活到最前面
-        NSApp.orderFrontStandardAboutPanel(nil)
-        NSApp.activate(ignoringOtherApps: true)
     }
 
     @objc private func showAbout() {
-        // 如果窗口已存在，只显示到前面
-        if aboutWindow != nil {
-            aboutWindow?.makeKeyAndOrderFront(nil)
+        if let existing = aboutWindow {
+            configureAboutWindowAlwaysOnTop(existing)
+            existing.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
             return
         }
 
-        // 创建自定义关于窗口
         let aboutView = AboutView()
 
         let window = NSWindow(
@@ -378,20 +515,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         window.titlebarAppearsTransparent = true
         window.titleVisibility = .hidden
         window.isMovableByWindowBackground = true
+        window.isReleasedWhenClosed = false
         window.contentView = NSHostingView(rootView: aboutView)
         window.center()
 
-        // 先设置窗口层级，再显示到前面
-        window.level = .floating
+        configureAboutWindowAlwaysOnTop(window)
         window.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
 
-        // 使用 delegate 处理窗口关闭
         window.delegate = self
         aboutWindow = window
     }
 
+    private func configureAboutWindowAlwaysOnTop(_ window: NSWindow) {
+        window.level = .floating
+        window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        window.hidesOnDeactivate = false
+    }
+
     @objc private func showSettings() {
-        // 如果窗口已存在，只显示到前面
         if settingsWindow != nil {
             settingsWindow?.makeKeyAndOrderFront(nil)
             return
@@ -401,7 +543,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let settingsView = SettingsView(viewModel: settingsViewModel)
 
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 400, height: 500),
+            contentRect: NSRect(x: 0, y: 0, width: 420, height: 640),
             styleMask: [.titled, .closable],
             backing: .buffered,
             defer: false
@@ -410,14 +552,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         window.contentView = NSHostingView(rootView: settingsView)
         window.center()
 
-        // 先设置窗口层级，再显示到前面
         window.level = .floating
         window.makeKeyAndOrderFront(nil)
 
-        // 设置窗口不属于主应用窗口
         window.isReleasedWhenClosed = false
 
-        // 使用 delegate 处理窗口关闭
         window.delegate = self
         settingsWindow = window
     }
@@ -425,7 +564,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     // MARK: - NSWindowDelegate
     func windowShouldClose(_ sender: NSWindow) -> Bool {
         if sender == settingsWindow {
-            // 隐藏窗口而不是关闭，防止应用退出
             sender.orderOut(nil)
             return false
         }

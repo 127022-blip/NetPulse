@@ -3,12 +3,15 @@ import Foundation
 /// 应用设置模型
 struct AppSettings: Codable {
     /// 菜单栏显示模式
-    var menuBarDisplayMode: MenuBarDisplayMode = .iconAndSpeed
+    var menuBarDisplayMode: MenuBarDisplayMode = .iconAndSystem
+
+    /// 外观主题：跟随系统 / 浅色 / 深色
+    var appearanceMode: AppearanceMode = .system
 
     /// 更新间隔 (秒)
     var updateInterval: Double = 2.0
 
-    /// 是否显示通知
+    /// 通知总开关
     var notificationsEnabled: Bool = true
 
     /// 断网通知是否启用
@@ -23,14 +26,8 @@ struct AppSettings: Codable {
     /// 选中的网络接口名称 (空字符串表示自动)
     var selectedInterface: String = ""
 
-    /// 是否在后台运行
-    var runInBackground: Bool = true
-
     /// 启动时自动运行
     var launchAtLogin: Bool = false
-
-    /// 迷你窗口是否置顶
-    var miniWindowFloats: Bool = true
 
     /// 每日流量限制 (bytes)，默认 1GB
     var dailyTrafficLimit: UInt64 = 1024 * 1024 * 1024
@@ -38,31 +35,83 @@ struct AppSettings: Codable {
     /// 流量提醒是否启用
     var trafficAlertEnabled: Bool = false
 
+
+    /// 外观主题
+    enum AppearanceMode: Int, Codable, Hashable {
+        case system = 0
+        case light = 1
+        case dark = 2
+
+        var displayName: String {
+            switch self {
+            case .system: return "跟随系统"
+            case .light: return "浅色"
+            case .dark: return "深色"
+            }
+        }
+
+        static var allCases: [AppearanceMode] {
+            [.system, .light, .dark]
+        }
+    }
+
     /// 菜单栏显示模式枚举
-    enum MenuBarDisplayMode: Int, Codable, CaseIterable {
-        case iconOnly = 0           // 仅图标
-        case iconAndSpeed = 1       // 图标 + 速度
-        case iconAndDualSpeed = 2   // 图标 + 上下速度
-        case iconWithCPU = 3        // 图标 + CPU
+    /// rawValue 保持兼容：2 仍表示「原上下速度+系统」→ 现名「网速 + 系统」
+    enum MenuBarDisplayMode: Int, Codable, Hashable {
+        case iconOnly = 0              // 仅图标
+        case iconAndSpeed = 1          // 图标 + 下载速度
+        case iconAndSystem = 2         // 网速 + CPU/MEM/SSD（原 iconAndDualSpeed 渲染）
+        case iconWithCPU = 3           // 图标 + CPU
+        case iconAndDualSpeed = 4      // 图标 + 上下速度（纯网速，无系统指标）
 
         var displayName: String {
             switch self {
             case .iconOnly: return "仅图标"
-            case .iconAndSpeed: return "图标 + 速度"
-            case .iconAndDualSpeed: return "图标 + 上下速度"
+            case .iconAndSpeed: return "图标 + 下载速度"
+            case .iconAndSystem: return "网速 + 系统"
             case .iconWithCPU: return "图标 + CPU"
+            case .iconAndDualSpeed: return "图标 + 上下速度"
             }
+        }
+
+        /// 兼容旧存档：若解码失败由外层默认；若旧名映射需要可在此扩展
+        static var allCases: [MenuBarDisplayMode] {
+            [.iconOnly, .iconAndSpeed, .iconAndDualSpeed, .iconAndSystem, .iconWithCPU]
         }
     }
 
-    /// 保存设置到 UserDefaults
+    /// 自定义解码：丢掉已删除字段（runInBackground / miniWindowFloats），兼容旧 JSON
+    enum CodingKeys: String, CodingKey {
+        case menuBarDisplayMode, appearanceMode, updateInterval, notificationsEnabled
+        case disconnectNotificationEnabled, speedThreshold, speedAlertEnabled
+        case selectedInterface, launchAtLogin, dailyTrafficLimit, trafficAlertEnabled
+    }
+
+    init() {}
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        let defaults = AppSettings()
+        menuBarDisplayMode = try c.decodeIfPresent(MenuBarDisplayMode.self, forKey: .menuBarDisplayMode) ?? defaults.menuBarDisplayMode
+        appearanceMode = try c.decodeIfPresent(AppearanceMode.self, forKey: .appearanceMode) ?? defaults.appearanceMode
+        // 兼容：旧版 raw 2 名为 iconAndDualSpeed，现映射为 iconAndSystem（同 rawValue）
+        updateInterval = try c.decodeIfPresent(Double.self, forKey: .updateInterval) ?? defaults.updateInterval
+        notificationsEnabled = try c.decodeIfPresent(Bool.self, forKey: .notificationsEnabled) ?? defaults.notificationsEnabled
+        disconnectNotificationEnabled = try c.decodeIfPresent(Bool.self, forKey: .disconnectNotificationEnabled) ?? defaults.disconnectNotificationEnabled
+        speedThreshold = try c.decodeIfPresent(Double.self, forKey: .speedThreshold) ?? defaults.speedThreshold
+        speedAlertEnabled = try c.decodeIfPresent(Bool.self, forKey: .speedAlertEnabled) ?? defaults.speedAlertEnabled
+        selectedInterface = try c.decodeIfPresent(String.self, forKey: .selectedInterface) ?? defaults.selectedInterface
+        launchAtLogin = try c.decodeIfPresent(Bool.self, forKey: .launchAtLogin) ?? defaults.launchAtLogin
+        dailyTrafficLimit = try c.decodeIfPresent(UInt64.self, forKey: .dailyTrafficLimit) ?? defaults.dailyTrafficLimit
+        trafficAlertEnabled = try c.decodeIfPresent(Bool.self, forKey: .trafficAlertEnabled) ?? defaults.trafficAlertEnabled
+    }
+
     func save() {
         if let data = try? JSONEncoder().encode(self) {
             UserDefaults.standard.set(data, forKey: Constants.UserDefaultsKeys.appSettings)
         }
     }
 
-    /// 从 UserDefaults 加载设置
     static func load() -> AppSettings {
         guard let data = UserDefaults.standard.data(forKey: Constants.UserDefaultsKeys.appSettings),
               let settings = try? JSONDecoder().decode(AppSettings.self, from: data) else {

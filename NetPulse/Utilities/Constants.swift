@@ -15,15 +15,16 @@ enum Constants {
     enum App {
         static let name = "NetPulse"
         static let bundleIdentifier = "com.netpulse.app"
-        static let version = "1.4.6"
-        static let build = "1"
+        static let version = "2.0.31"
+        static let build = "231"
     }
 
     /// 界面常量
     enum UI {
         static let menuBarIconSize: CGFloat = 18
-        static let panelWidth: CGFloat = 320
+        static let panelWidth: CGFloat = 340
         static let panelCornerRadius: CGFloat = 12
+        static let cardCornerRadius: CGFloat = 12
         static let animationDuration: Double = 0.25
     }
 
@@ -79,6 +80,7 @@ let iso8601Formatter: ISO8601DateFormatter = {
 // MARK: - Notification Names
 extension Notification.Name {
     static let openSettings = Notification.Name("com.netpulse.openSettings")
+    static let openAbout = Notification.Name("com.netpulse.openAbout")
     static let settingsChanged = Notification.Name("com.netpulse.settingsChanged")
     static let closeSettings = Notification.Name("com.netpulse.closeSettings")
 }

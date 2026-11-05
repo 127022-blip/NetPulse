@@ -2,7 +2,7 @@ name: NetPulse
 options:
   bundleIdPrefix: com.netpulse
   deploymentTarget:
-    macOS: "12.0"
+    macOS: "13.0"
   xcodeVersion: "15.0"
   generateEmptyDirectories: true
   groupSortPosition: top
@@ -10,10 +10,10 @@ options:
 settings:
   base:
     PRODUCT_NAME: NetPulse
-    MARKETING_VERSION: "1.3.0"
-    CURRENT_PROJECT_VERSION: "4"
+    MARKETING_VERSION: "2.0.27"
+    CURRENT_PROJECT_VERSION: "227"
     SWIFT_VERSION: "5.9"
-    MACOSX_DEPLOYMENT_TARGET: "12.0"
+    MACOSX_DEPLOYMENT_TARGET: "13.0"
     CODE_SIGN_STYLE: Automatic
     ENABLE_HARDENED_RUNTIME: YES
     COMBINE_HIDPI_IMAGES: YES
@@ -26,6 +26,7 @@ targets:
       - path: NetPulse
         excludes:
           - "**/.DS_Store"
+          - "Tests/**"
     settings:
       base:
         INFOPLIST_FILE: NetPulse/Resources/Info.plist
@@ -39,12 +40,15 @@ targets:
     dependencies:
       - framework: CoreWLAN.framework
         embed: false
+      - framework: CoreLocation.framework
+        embed: false
+      - framework: SystemConfiguration.framework
+        embed: false
     entitlements:
       path: NetPulse/Resources/NetPulse.entitlements
     postBuildScripts:
       - name: "Rename App with Version"
         script: |
-          # 读取并递增构建计数
           BUILD_NUM_FILE="${SRCROOT}/build_number.txt"
           if [ -f "$BUILD_NUM_FILE" ]; then
             BUILD_NUM=$(cat "$BUILD_NUM_FILE")
@@ -54,25 +58,21 @@ targets:
           fi
           echo "$BUILD_NUM" > "$BUILD_NUM_FILE"
 
-          # 从 Xcode build settings 获取版本信息
           MARKETING_VERSION=$(xcodebuild -project "${PROJECT_FILE_PATH}" -target NetPulse -configuration Debug -showBuildSettings 2>/dev/null | grep "MARKETING_VERSION" | head -1 | awk '{print $3}')
           if [ -z "$MARKETING_VERSION" ]; then
-            MARKETING_VERSION="1.3.0"
+            MARKETING_VERSION="2.0.27"
           fi
           PRODUCT_NAME="NetPulse"
 
-          # 桌面路径
           DESKTOP_DIR="${HOME}/Desktop"
           mkdir -p "$DESKTOP_DIR"
 
-          # 复制并重命名 app 到桌面（使用 ditto 替代 cp -R）
           SRC_APP="${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app"
           DST_APP="${DESKTOP_DIR}/${PRODUCT_NAME}-${MARKETING_VERSION}-(${BUILD_NUM}).app"
 
           if [ -d "$SRC_APP" ]; then
             rm -rf "$DST_APP"
             cp -Rp "$SRC_APP" "$DST_APP"
-            # 重新签名
             codesign --force --sign - "$DST_APP"
             sync
             echo "✅ Created: $DST_APP"
