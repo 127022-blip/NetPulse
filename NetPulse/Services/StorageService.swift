@@ -2,21 +2,17 @@ import Foundation
 
 /// 存储服务 - 负责数据的持久化存储
 final class StorageService: ObservableObject {
-    // MARK: - 单例
     static let shared = StorageService()
 
-    // MARK: - Published 属性
     @Published private(set) var todayTraffic = TrafficRecord.today
     @Published private(set) var trafficHistory: [TrafficRecord] = []
 
-    // MARK: - 私有属性
     private let userDefaults = UserDefaults.standard
     private var saveTimer: Timer?
 
-    // MARK: - 初始化
     private init() {
-        loadTodayTraffic()
         loadTrafficHistory()
+        loadTodayTraffic()
         checkAndResetForNewDay()
         startAutoSave()
     }
@@ -25,18 +21,13 @@ final class StorageService: ObservableObject {
         saveTimer?.invalidate()
     }
 
-    // MARK: - 公开方法
-
-    /// 更新今日流量
-    /// - Parameters:
-    ///   - downloaded: 新增下载字节数
-    ///   - uploaded: 新增上传字节数
-    ///   - currentStats: 当前网络统计
     func updateTodayTraffic(downloaded: UInt64, uploaded: UInt64, currentStats: NetworkStats) {
+        // 写入前再确认跨日，避免跨日后仍累加到旧日
+        checkAndResetForNewDay()
+
         todayTraffic.downloadBytes += downloaded
         todayTraffic.uploadBytes += uploaded
 
-        // 更新峰值速度
         if currentStats.downloadSpeed > todayTraffic.peakDownloadSpeed {
             todayTraffic.peakDownloadSpeed = currentStats.downloadSpeed
         }
@@ -44,66 +35,70 @@ final class StorageService: ObservableObject {
             todayTraffic.peakUploadSpeed = currentStats.uploadSpeed
         }
 
-        // 标记更新时间
         todayTraffic.createdAt = ISO8601DateFormatter().string(from: Date())
     }
 
-    /// 保存今日流量
     func saveTodayTraffic() {
-        // 每次保存时检查是否需要跨日重置
         checkAndResetForNewDay()
-        
-        userDefaults.set(todayTraffic.downloadBytes, forKey: Constants.UserDefaultsKeys.todayDownloadBytes)
-        userDefaults.set(todayTraffic.uploadBytes, forKey: Constants.UserDefaultsKeys.todayUploadBytes)
+
+        // UInt64 用 NSNumber 持久化，避免 Int 硬桥截断
+        userDefaults.set(NSNumber(value: todayTraffic.downloadBytes), forKey: Constants.UserDefaultsKeys.todayDownloadBytes)
+        userDefaults.set(NSNumber(value: todayTraffic.uploadBytes), forKey: Constants.UserDefaultsKeys.todayUploadBytes)
         userDefaults.set(DateFormatter.yearMonthDay.string(from: Date()), forKey: Constants.UserDefaultsKeys.lastResetDate)
 
-        // 同时保存到历史记录
         saveToHistory(todayTraffic)
     }
 
-    /// 重置今日流量
     func resetTodayTraffic() {
         todayTraffic = TrafficRecord.today
         saveTodayTraffic()
     }
 
-    /// 清除所有历史记录
     func clearHistory() {
         trafficHistory.removeAll()
         userDefaults.removeObject(forKey: Constants.UserDefaultsKeys.trafficRecords)
     }
 
-    /// 获取指定日期的流量记录
-    /// - Parameter date: 日期字符串 (YYYY-MM-DD)
-    /// - Returns: 流量记录，如果没有则返回 nil
     func getTrafficRecord(for date: String) -> TrafficRecord? {
         return trafficHistory.first { $0.date == date }
     }
 
-    /// 获取最近几天的流量记录
-    /// - Parameter days: 天数
-    /// - Returns: 流量记录数组
     func getRecentTrafficRecords(days: Int) -> [TrafficRecord] {
         let sortedRecords = trafficHistory.sorted { $0.date > $1.date }
         return Array(sortedRecords.prefix(days))
     }
 
-    // MARK: - 私有方法
-
-    /// 加载今日流量
+    /// 加载今日流量：日期变化时先把 UD 中昨日字节归档进 history，再清零今日
     private func loadTodayTraffic() {
         let lastResetDate = userDefaults.string(forKey: Constants.UserDefaultsKeys.lastResetDate)
         let today = DateFormatter.yearMonthDay.string(from: Date())
 
-        // 如果不是今天，重置流量
-        if lastResetDate != today {
+        let downloaded = Self.readUInt64(userDefaults, key: Constants.UserDefaultsKeys.todayDownloadBytes)
+        let uploaded = Self.readUInt64(userDefaults, key: Constants.UserDefaultsKeys.todayUploadBytes)
+
+        if let lastResetDate = lastResetDate, lastResetDate != today {
+            // 归档昨日 UD 数据到历史（与 checkAndResetForNewDay 口径一致）
+            let yesterdayRecord = TrafficRecord(
+                date: lastResetDate,
+                downloadBytes: downloaded,
+                uploadBytes: uploaded,
+                createdAt: ISO8601DateFormatter().string(from: Date())
+            )
+            if downloaded > 0 || uploaded > 0 {
+                saveToHistory(yesterdayRecord)
+            }
+            // 清零今日
             todayTraffic = TrafficRecord.today
+            userDefaults.set(0, forKey: Constants.UserDefaultsKeys.todayDownloadBytes)
+            userDefaults.set(0, forKey: Constants.UserDefaultsKeys.todayUploadBytes)
+            userDefaults.set(today, forKey: Constants.UserDefaultsKeys.lastResetDate)
             return
         }
 
-        // 加载保存的流量
-        let downloaded = UInt64(userDefaults.integer(forKey: Constants.UserDefaultsKeys.todayDownloadBytes))
-        let uploaded = UInt64(userDefaults.integer(forKey: Constants.UserDefaultsKeys.todayUploadBytes))
+        if lastResetDate == nil {
+            todayTraffic = TrafficRecord.today
+            return
+        }
 
         todayTraffic = TrafficRecord(
             date: today,
@@ -113,7 +108,6 @@ final class StorageService: ObservableObject {
         )
     }
 
-    /// 加载流量历史
     private func loadTrafficHistory() {
         guard let data = userDefaults.data(forKey: Constants.UserDefaultsKeys.trafficRecords),
               let records = try? JSONDecoder().decode([TrafficRecord].self, from: data) else {
@@ -123,49 +117,81 @@ final class StorageService: ObservableObject {
         trafficHistory = records.sorted { $0.date > $1.date }
     }
 
-    /// 保存到历史记录
     private func saveToHistory(_ record: TrafficRecord) {
-        // 检查是否已存在该日期的记录
         if let index = trafficHistory.firstIndex(where: { $0.date == record.date }) {
-            trafficHistory[index] = record
+            // 保留更大的累计值，避免被空记录覆盖
+            let existing = trafficHistory[index]
+            var merged = record
+            merged.downloadBytes = max(existing.downloadBytes, record.downloadBytes)
+            merged.uploadBytes = max(existing.uploadBytes, record.uploadBytes)
+            merged.peakDownloadSpeed = max(existing.peakDownloadSpeed, record.peakDownloadSpeed)
+            merged.peakUploadSpeed = max(existing.peakUploadSpeed, record.peakUploadSpeed)
+            trafficHistory[index] = merged
         } else {
             trafficHistory.append(record)
         }
 
-        // 按日期排序
         trafficHistory.sort { $0.date > $1.date }
 
-        // 只保留最近30天
         if trafficHistory.count > Constants.Storage.maxHistoryDays {
             trafficHistory = Array(trafficHistory.prefix(Constants.Storage.maxHistoryDays))
         }
 
-        // 保存到 UserDefaults
         if let data = try? JSONEncoder().encode(trafficHistory) {
             userDefaults.set(data, forKey: Constants.UserDefaultsKeys.trafficRecords)
         }
     }
 
-    /// 检查是否需要在新的一天重置流量
     private func checkAndResetForNewDay() {
         let lastResetDate = userDefaults.string(forKey: Constants.UserDefaultsKeys.lastResetDate)
         let today = DateFormatter.yearMonthDay.string(from: Date())
 
         if lastResetDate != today {
-            // 保存昨天的流量到历史
-            if lastResetDate != nil {
-                saveToHistory(todayTraffic)
+            if let lastResetDate = lastResetDate {
+                // 用内存中的今日（实为昨日）或 UD 归档
+                var archive = todayTraffic
+                if archive.date != lastResetDate {
+                    archive = TrafficRecord(
+                        date: lastResetDate,
+                        downloadBytes: Self.readUInt64(userDefaults, key: Constants.UserDefaultsKeys.todayDownloadBytes),
+                        uploadBytes: Self.readUInt64(userDefaults, key: Constants.UserDefaultsKeys.todayUploadBytes),
+                        peakDownloadSpeed: todayTraffic.peakDownloadSpeed,
+                        peakUploadSpeed: todayTraffic.peakUploadSpeed,
+                        createdAt: ISO8601DateFormatter().string(from: Date())
+                    )
+                } else {
+                    archive = TrafficRecord(
+                        date: lastResetDate,
+                        downloadBytes: todayTraffic.downloadBytes,
+                        uploadBytes: todayTraffic.uploadBytes,
+                        peakDownloadSpeed: todayTraffic.peakDownloadSpeed,
+                        peakUploadSpeed: todayTraffic.peakUploadSpeed,
+                        createdAt: todayTraffic.createdAt
+                    )
+                }
+                if archive.downloadBytes > 0 || archive.uploadBytes > 0 {
+                    saveToHistory(archive)
+                }
             }
-            // 重置今日流量
             todayTraffic = TrafficRecord.today
+            userDefaults.set(0, forKey: Constants.UserDefaultsKeys.todayDownloadBytes)
+            userDefaults.set(0, forKey: Constants.UserDefaultsKeys.todayUploadBytes)
+            userDefaults.set(today, forKey: Constants.UserDefaultsKeys.lastResetDate)
         }
     }
 
-    /// 开始自动保存定时器
     private func startAutoSave() {
         saveTimer = Timer.scheduledTimer(withTimeInterval: Constants.Storage.saveInterval, repeats: true) { [weak self] _ in
             self?.saveTodayTraffic()
         }
         RunLoop.main.add(saveTimer!, forMode: .common)
+    }
+
+    /// 安全读取 UInt64（优先 NSNumber.uint64Value）
+    private static func readUInt64(_ defaults: UserDefaults, key: String) -> UInt64 {
+        if let num = defaults.object(forKey: key) as? NSNumber {
+            return num.uint64Value
+        }
+        return 0
     }
 }
