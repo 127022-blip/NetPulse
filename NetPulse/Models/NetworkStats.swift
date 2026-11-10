@@ -1,9 +1,8 @@
 import Foundation
+import CoreWLAN
 
 /// 网络统计数据模型
-struct NetworkStats: Identifiable, Equatable {
-    let id = UUID()
-
+struct NetworkStats: Equatable {
     /// 下载速度 (bytes per second)
     var downloadSpeed: Double = 0
 
@@ -54,7 +53,7 @@ struct NetworkStats: Identifiable, Equatable {
 
 /// 网络接口信息模型
 struct NetworkInterface: Identifiable, Hashable {
-    let id = UUID()
+    let id: String
 
     /// 接口名称 (如 en0, en1, utun2)
     let name: String
@@ -71,6 +70,16 @@ struct NetworkInterface: Identifiable, Hashable {
     /// 当前流量
     var currentBytesIn: UInt64 = 0
     var currentBytesOut: UInt64 = 0
+
+    init(name: String, displayName: String, type: InterfaceType, isActive: Bool = false, currentBytesIn: UInt64 = 0, currentBytesOut: UInt64 = 0) {
+        self.id = name
+        self.name = name
+        self.displayName = displayName
+        self.type = type
+        self.isActive = isActive
+        self.currentBytesIn = currentBytesIn
+        self.currentBytesOut = currentBytesOut
+    }
 
     /// 网络接口类型枚举
     enum InterfaceType: String {
@@ -93,15 +102,17 @@ struct NetworkInterface: Identifiable, Hashable {
         }
     }
 
-    /// 根据接口名称推断类型
+    /// 当前 Wi-Fi BSD 名（CoreWLAN），避免把 en0 写死成 Wi-Fi
+    private static var wifiBSDName: String? {
+        CWWiFiClient.shared().interface()?.interfaceName
+    }
+
+    /// 根据接口名称推断类型（不硬编码 en0=Wi-Fi）
     static func inferType(from name: String) -> InterfaceType {
-        if name.hasPrefix("en") {
-            // 通常 en0 是 Wi-Fi, en1 是以太网
-            if name == "en0" {
-                return .wifi
-            } else {
-                return .ethernet
-            }
+        if let wifi = wifiBSDName, name == wifi {
+            return .wifi
+        } else if name.hasPrefix("en") {
+            return .ethernet
         } else if name.hasPrefix("utun") || name.hasPrefix("ppp") {
             return .vpn
         } else if name.hasPrefix("lo") {
@@ -111,9 +122,9 @@ struct NetworkInterface: Identifiable, Hashable {
         }
     }
 
-    /// 获取显示名称
+    /// 获取显示名称（不硬编码 en0=Wi-Fi；以 CoreWLAN BSD 名为准）
     static func getDisplayName(for name: String) -> String {
-        if name.hasPrefix("en0") {
+        if let wifi = wifiBSDName, name == wifi {
             return "Wi-Fi"
         } else if name.hasPrefix("en") {
             return "以太网 (\(name))"

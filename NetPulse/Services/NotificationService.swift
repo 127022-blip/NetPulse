@@ -1,26 +1,36 @@
 import Foundation
+import AppKit
 import UserNotifications
 
-/// 通知服务 - 负责发送各种系统通知
+/// 通知服务 - 负责发送各种系统通知（固定 id 可替换 + 防抖）
 final class NotificationService: NSObject, ObservableObject {
-    // MARK: - 单例
     static let shared = NotificationService()
 
-    // MARK: - 属性
     @Published private(set) var isAuthorized = false
+    /// 完整授权状态（供设置页展示与引导）
+    @Published private(set) var authorizationStatus: UNAuthorizationStatus = .notDetermined
 
     private let notificationCenter = UNUserNotificationCenter.current()
 
-    // MARK: - 初始化
+    /// 各类型上次发送时间（进程内）
+    private var lastSentAt: [NotificationType: Date] = [:]
+    /// 流量超限：每日一次记录
+    private var highTrafficNotifiedDate: String?
+    /// 慢速冷却（秒）
+    private let slowSpeedCooldown: TimeInterval = 3600
+    /// 断网/恢复最小间隔，避免抖动
+    private let disconnectCooldown: TimeInterval = 30
+
+    private let defaults = UserDefaults.standard
+    private let highTrafficDateKey = "com.netpulse.highTrafficNotifiedDate"
+
     private override init() {
         super.init()
         notificationCenter.delegate = self
+        highTrafficNotifiedDate = defaults.string(forKey: highTrafficDateKey)
         checkAuthorizationStatus()
     }
 
-    // MARK: - 公开方法
-
-    /// 请求通知权限
     func requestAuthorization(completion: ((Bool) -> Void)? = nil) {
         notificationCenter.requestAuthorization(options: [.alert, .sound, .badge]) { [weak self] granted, error in
             DispatchQueue.main.async {
@@ -33,57 +43,77 @@ final class NotificationService: NSObject, ObservableObject {
         }
     }
 
-    /// 检查通知授权状态
     func checkAuthorizationStatus() {
         notificationCenter.getNotificationSettings { [weak self] settings in
             DispatchQueue.main.async {
+                self?.authorizationStatus = settings.authorizationStatus
                 self?.isAuthorized = settings.authorizationStatus == .authorized
             }
         }
     }
 
-    /// 发送网络断开通知
+    /// 打开系统「通知」设置，便于用户手动开启权限
+    func openSystemNotificationSettings() {
+        let candidates = [
+            "x-apple.systempreferences:com.apple.Notifications-Settings.extension",
+            "x-apple.systempreferences:com.apple.preference.notifications",
+            "x-apple.systempreferences:com.apple.Notifications-Settings"
+        ]
+        for s in candidates {
+            if let url = URL(string: s), NSWorkspace.shared.open(url) {
+                return
+            }
+        }
+    }
+
+    /// 设置页展示用的权限文案
+    var authorizationStatusText: String {
+        switch authorizationStatus {
+        case .authorized: return "已授权"
+        case .denied: return "已拒绝"
+        case .notDetermined: return "尚未请求"
+        case .provisional: return "临时授权"
+        case .ephemeral: return "临时授权"
+        @unknown default: return "未知"
+        }
+    }
+
     func sendDisconnectNotification() {
-        sendNotification(
-            type: .disconnect,
-            body: "网络连接已断开"
-        )
+        sendNotification(type: .disconnect, body: "网络连接已断开", cooldown: disconnectCooldown)
     }
 
-    /// 发送网络恢复通知
-    /// - Parameter speed: 恢复时的网速
     func sendReconnectNotification(speed: String) {
-        sendNotification(
-            type: .reconnect,
-            body: "网络已恢复，当前速度 \(speed)"
-        )
+        sendNotification(type: .reconnect, body: "网络已恢复，当前速度 \(speed)", cooldown: disconnectCooldown)
     }
 
-    /// 发送网速过慢通知
-    /// - Parameter speed: 当前网速
     func sendSlowSpeedNotification(speed: String) {
-        sendNotification(
-            type: .slowSpeed,
-            body: "网速低于阈值，当前速度 \(speed)"
-        )
+        sendNotification(type: .slowSpeed, body: "网速低于阈值，当前速度 \(speed)", cooldown: slowSpeedCooldown)
     }
 
-    /// 发送流量超限通知
-    /// - Parameter usage: 当前已用流量
+    /// 流量超限：同一自然日最多一次；同时 1 小时冷却兜底
     func sendHighTrafficNotification(usage: String) {
-        sendNotification(
-            type: .highTraffic,
-            body: "今日流量已使用 \(usage)"
-        )
+        let today = DateFormatter.yearMonthDay.string(from: Date())
+        if highTrafficNotifiedDate == today {
+            print("[NetPulse] 今日流量通知已发送，跳过")
+            return
+        }
+        let sent = sendNotification(type: .highTraffic, body: "今日流量已使用 \(usage)", cooldown: 3600)
+        if sent {
+            highTrafficNotifiedDate = today
+            defaults.set(today, forKey: highTrafficDateKey)
+        }
     }
 
-    // MARK: - 私有方法
-
-    /// 发送通知
-    private func sendNotification(type: NotificationType, body: String) {
+    @discardableResult
+    private func sendNotification(type: NotificationType, body: String, cooldown: TimeInterval) -> Bool {
         guard isAuthorized else {
             print("[NetPulse] 通知未授权，跳过发送")
-            return
+            return false
+        }
+
+        if let last = lastSentAt[type], Date().timeIntervalSince(last) < cooldown {
+            print("[NetPulse] 通知防抖跳过: \(type.rawValue)")
+            return false
         }
 
         let content = UNMutableNotificationContent()
@@ -92,11 +122,12 @@ final class NotificationService: NSObject, ObservableObject {
         content.sound = .default
         content.categoryIdentifier = "NETPULSE_ALERT"
 
-        // 使用通知类型作为标识符，便于管理
+        // 固定 identifier：同类型替换而非堆叠
+        let identifier = "com.netpulse.\(type.rawValue)"
         let request = UNNotificationRequest(
-            identifier: "\(type.rawValue)-\(Date().timeIntervalSince1970)",
+            identifier: identifier,
             content: content,
-            trigger: nil // 立即发送
+            trigger: nil
         )
 
         notificationCenter.add(request) { error in
@@ -104,35 +135,30 @@ final class NotificationService: NSObject, ObservableObject {
                 print("[NetPulse] 发送通知失败: \(error)")
             }
         }
+        lastSentAt[type] = Date()
+        return true
     }
 
-    /// 移除所有待发送的通知
     func removeAllPendingNotifications() {
         notificationCenter.removeAllPendingNotificationRequests()
     }
 
-    /// 移除所有已显示的通知
     func removeAllDeliveredNotifications() {
         notificationCenter.removeAllDeliveredNotifications()
     }
 }
 
-// MARK: - UNUserNotificationCenterDelegate
 extension NotificationService: UNUserNotificationCenterDelegate {
-    /// 应用在前台时收到通知的回调
     func userNotificationCenter(_ center: UNUserNotificationCenter,
                                willPresent notification: UNNotification,
                                withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
-        // 在前台也显示通知
         completionHandler([.banner, .sound])
     }
 
-    /// 用户点击通知的回调
     func userNotificationCenter(_ center: UNUserNotificationCenter,
                                didReceive response: UNNotificationResponse,
                                withCompletionHandler completionHandler: @escaping () -> Void) {
-        let identifier = response.notification.request.identifier
-        print("[NetPulse] 用户点击了通知: \(identifier)")
+        print("[NetPulse] 用户点击了通知: \(response.notification.request.identifier)")
         completionHandler()
     }
 }

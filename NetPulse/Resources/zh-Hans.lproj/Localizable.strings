@@ -13,7 +13,7 @@
 "network.connected" = "已连接";
 "network.disconnected" = "已断开";
 "network.wifi.name" = "Wi-Fi";
-"network.not.connected" = "未连接WiFi";
+"network.not.connected" = "未连接 Wi-Fi";
 "network.ip.address" = "IP 地址";
 "network.gateway" = "网关";
 "network.signal" = "信号强度";

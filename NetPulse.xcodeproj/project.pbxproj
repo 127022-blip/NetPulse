@@ -22,7 +22,12 @@
 		8136D85B0848B6566FC77A22D034DBC2 /* CPUMonitorService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCC7173316118EA89801673429A6E930 /* CPUMonitorService.swift */; };
 		MEMOBUILD1234567890ABCDEF12345678 /* MemoryMonitorService.swift in Sources */ = {isa = PBXBuildFile; fileRef = MEMO1234567890ABCDEF1234567890AB /* MemoryMonitorService.swift */; };
 		DISKBUILD1234567890ABCDEF1234567890 /* DiskMonitorService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DISK1234567890ABCDEF12345678901234 /* DiskMonitorService.swift */; };
-		CPUPBUILD1234567890ABCDEF12345678901 /* CPUTemperatureService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CPUPEMP123456789ABCDEF12345678901234 /* CPUTemperatureService.swift */; };
+		A12SMCBRIDGEC0001 /* SMCBridge.c in Sources */ = {isa = PBXBuildFile; fileRef = A11SMCBRIDGEC0001 /* SMCBridge.c */; };
+		A12TEMPTYPES00001 /* TemperatureTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11TEMPTYPES00001 /* TemperatureTypes.swift */; };
+		A12SMCTEMPREAD001 /* SMCTemperatureReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11SMCTEMPREAD001 /* SMCTemperatureReader.swift */; };
+		A12HIDTEMPREAD001 /* HIDTemperatureReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11HIDTEMPREAD001 /* HIDTemperatureReader.swift */; };
+		A12CPUTEMMON00001 /* CPUTemperatureMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11CPUTEMMON00001 /* CPUTemperatureMonitor.swift */; };
+		A12IOKITFW0000001 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A11IOKITFW0000001 /* IOKit.framework */; };
 		839484D26892B98FE74818415F60EC22 /* LoginItemService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D1139926EA930180995390957F1E2C8 /* LoginItemService.swift */; };
 		88478692B8537BF7125480F9510CE1FC /* TrafficCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = E890E44690962923B476BE33FDC48FFD /* TrafficCalculator.swift */; };
 		A9D987BA0E306B8A8651397C07D05708 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E6B92687B1AE9698682CAA9A4E3D531 /* AboutView.swift */; };
@@ -66,7 +71,14 @@
 		E044C6DA2A8445CA702BA5E29CDADDDE /* ByteFormatter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ByteFormatter.swift; sourceTree = "<group>"; };
 		MEMO1234567890ABCDEF1234567890AB /* MemoryMonitorService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryMonitorService.swift; sourceTree = "<group>"; };
 		DISK1234567890ABCDEF12345678901234 /* DiskMonitorService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiskMonitorService.swift; sourceTree = "<group>"; };
-		CPUPEMP123456789ABCDEF12345678901234 /* CPUTemperatureService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CPUTemperatureService.swift; sourceTree = "<group>"; };
+		A11SMCBRIDGEC0001 /* SMCBridge.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = SMCBridge.c; sourceTree = "<group>"; };
+		A11SMCBRIDGEH0001 /* SMCBridge.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SMCBridge.h; sourceTree = "<group>"; };
+		A11NPBRIDGEHDR001 /* NetPulse-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "NetPulse-Bridging-Header.h"; sourceTree = "<group>"; };
+		A11TEMPTYPES00001 /* TemperatureTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemperatureTypes.swift; sourceTree = "<group>"; };
+		A11SMCTEMPREAD001 /* SMCTemperatureReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SMCTemperatureReader.swift; sourceTree = "<group>"; };
+		A11HIDTEMPREAD001 /* HIDTemperatureReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HIDTemperatureReader.swift; sourceTree = "<group>"; };
+		A11CPUTEMMON00001 /* CPUTemperatureMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CPUTemperatureMonitor.swift; sourceTree = "<group>"; };
+		A11IOKITFW0000001 /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = System/Library/Frameworks/IOKit.framework; sourceTree = SDKROOT; };
 		E890E44690962923B476BE33FDC48FFD /* TrafficCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrafficCalculator.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -76,6 +88,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				DD5EAF0D31B88699942EEA362043A0F2 /* CoreWLAN.framework in Frameworks */,
+				A12IOKITFW0000001 /* IOKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -86,6 +99,7 @@
 			isa = PBXGroup;
 			children = (
 				7C6F1A796E1EF7AB56066BD3F92D05A0 /* CoreWLAN.framework */,
+				A11IOKITFW0000001 /* IOKit.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -101,7 +115,13 @@
 				E890E44690962923B476BE33FDC48FFD /* TrafficCalculator.swift */,
 				MEMO1234567890ABCDEF1234567890AB /* MemoryMonitorService.swift */,
 				DISK1234567890ABCDEF12345678901234 /* DiskMonitorService.swift */,
-				CPUPEMP123456789ABCDEF12345678901234 /* CPUTemperatureService.swift */,
+				A11SMCBRIDGEC0001 /* SMCBridge.c */,
+				A11SMCBRIDGEH0001 /* SMCBridge.h */,
+				A11NPBRIDGEHDR001 /* NetPulse-Bridging-Header.h */,
+				A11TEMPTYPES00001 /* TemperatureTypes.swift */,
+				A11SMCTEMPREAD001 /* SMCTemperatureReader.swift */,
+				A11HIDTEMPREAD001 /* HIDTemperatureReader.swift */,
+				A11CPUTEMMON00001 /* CPUTemperatureMonitor.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -278,7 +298,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# 读取并递增构建计数\nBUILD_NUM_FILE=\"${SRCROOT}/build_number.txt\"\nif [ -f \"$BUILD_NUM_FILE\" ]; then\n  BUILD_NUM=$(cat \"$BUILD_NUM_FILE\")\n  BUILD_NUM=$((BUILD_NUM + 1))\nelse\n  BUILD_NUM=1\nfi\necho \"$BUILD_NUM\" > \"$BUILD_NUM_FILE\"\n\n# 从 Xcode build settings 获取版本信息\nMARKETING_VERSION=$(xcodebuild -project \"${PROJECT_FILE_PATH}\" -target NetPulse -configuration Debug -showBuildSettings 2>/dev/null | grep \"MARKETING_VERSION\" | head -1 | awk '{print $3}')\nif [ -z \"$MARKETING_VERSION\" ]; then\n  MARKETING_VERSION=\"1.4.0\"\nfi\nPRODUCT_NAME=\"NetPulse\"\n\n# 桌面路径\nDESKTOP_DIR=\"${HOME}/Desktop\"\nmkdir -p \"$DESKTOP_DIR\"\n\n# 复制并重命名 app 到桌面（使用 ditto 替代 cp -R）\nSRC_APP=\"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app\"\nDST_APP=\"${DESKTOP_DIR}/${PRODUCT_NAME}-${MARKETING_VERSION}-(${BUILD_NUM}).app\"\n\nif [ -d \"$SRC_APP\" ]; then\n  rm -rf \"$DST_APP\"\n  cp -Rp \"$SRC_APP\" \"$DST_APP\"\n  # 重新签名\n  codesign --force --sign - \"$DST_APP\"\n  sync\n  echo \"✅ Created: $DST_APP\"\nfi\n";
+			shellScript = "# 读取并递增构建计数\nBUILD_NUM_FILE=\"${SRCROOT}/build_number.txt\"\nif [ -f \"$BUILD_NUM_FILE\" ]; then\n  BUILD_NUM=$(cat \"$BUILD_NUM_FILE\")\n  BUILD_NUM=$((BUILD_NUM + 1))\nelse\n  BUILD_NUM=1\nfi\necho \"$BUILD_NUM\" > \"$BUILD_NUM_FILE\"\n\n# 从 Xcode build settings 获取版本信息\nMARKETING_VERSION=$(xcodebuild -project \"${PROJECT_FILE_PATH}\" -target NetPulse -configuration Debug -showBuildSettings 2>/dev/null | grep \"MARKETING_VERSION\" | head -1 | awk '{print $3}')\nif [ -z \"$MARKETING_VERSION\" ]; then\n  MARKETING_VERSION=\"2.0.55\"\nfi\nPRODUCT_NAME=\"NetPulse\"\n\n# 桌面路径\nDESKTOP_DIR=\"${HOME}/Desktop\"\nmkdir -p \"$DESKTOP_DIR\"\n\n# 复制并重命名 app 到桌面（使用 ditto 替代 cp -R）\nSRC_APP=\"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app\"\nDST_APP=\"${DESKTOP_DIR}/${PRODUCT_NAME}-${MARKETING_VERSION}-(${BUILD_NUM}).app\"\n\nif [ -d \"$SRC_APP\" ]; then\n  rm -rf \"$DST_APP\"\n  cp -Rp \"$SRC_APP\" \"$DST_APP\"\n  # 重新签名\n  codesign --force --sign - \"$DST_APP\"\n  sync\n  echo \"✅ Created: $DST_APP\"\nfi\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -294,7 +314,11 @@
 				8136D85B0848B6566FC77A22D034DBC2 /* CPUMonitorService.swift in Sources */,
 				MEMOBUILD1234567890ABCDEF12345678 /* MemoryMonitorService.swift in Sources */,
 				DISKBUILD1234567890ABCDEF1234567890 /* DiskMonitorService.swift in Sources */,
-				CPUPBUILD1234567890ABCDEF12345678901 /* CPUTemperatureService.swift in Sources */,
+				A12SMCBRIDGEC0001 /* SMCBridge.c in Sources */,
+				A12TEMPTYPES00001 /* TemperatureTypes.swift in Sources */,
+				A12SMCTEMPREAD001 /* SMCTemperatureReader.swift in Sources */,
+				A12HIDTEMPREAD001 /* HIDTemperatureReader.swift in Sources */,
+				A12CPUTEMMON00001 /* CPUTemperatureMonitor.swift in Sources */,
 				BBCB24363402E4A2800AB96575B9BBAE /* Constants.swift in Sources */,
 				276B748DA2888CCC4C73B5979F1D03D2 /* DropdownPanelView.swift in Sources */,
 				7149638ED69356BB9057E63D211BBDA1 /* Extensions.swift in Sources */,
@@ -343,6 +367,7 @@
 					"\".\"",
 				);
 				INFOPLIST_FILE = NetPulse/Resources/Info.plist;
+				SWIFT_OBJC_BRIDGING_HEADER = NetPulse/Services/NetPulse-Bridging-Header.h;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.netpulse.NetPulse;
 			};
@@ -353,10 +378,10 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 255;
 				ENABLE_HARDENED_RUNTIME = YES;
 				MACOSX_DEPLOYMENT_TARGET = 12.0;
-				MARKETING_VERSION = 1.4.6;
+				MARKETING_VERSION = 2.0.55;
 				PRODUCT_NAME = NetPulse;
 				SDKROOT = macosx;
 				SWIFT_VERSION = 5.9;
@@ -377,6 +402,7 @@
 					"\".\"",
 				);
 				INFOPLIST_FILE = NetPulse/Resources/Info.plist;
+				SWIFT_OBJC_BRIDGING_HEADER = NetPulse/Services/NetPulse-Bridging-Header.h;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.netpulse.NetPulse;
 			};
@@ -387,10 +413,10 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 255;
 				ENABLE_HARDENED_RUNTIME = YES;
 				MACOSX_DEPLOYMENT_TARGET = 12.0;
-				MARKETING_VERSION = 1.4.6;
+				MARKETING_VERSION = 2.0.55;
 				PRODUCT_NAME = NetPulse;
 				SDKROOT = macosx;
 				SWIFT_VERSION = 5.9;

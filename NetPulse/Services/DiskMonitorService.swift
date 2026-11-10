@@ -1,59 +1,71 @@
 import Foundation
 
-/// 硬盘使用率监控服务
+/// 硬盘使用率监控：失败时保留上次成功值；从未成功则 available=false 显示 --%
 final class DiskMonitorService {
     static let shared = DiskMonitorService()
 
+    struct Snapshot: Equatable {
+        let percent: Double
+        let formatted: String
+        let available: Bool
+        let total: Int64
+        let free: Int64
+    }
+
+    private let lock = NSLock()
+    private var cachedUsage: Double = 0.0
+    private var cachedTotal: Int64 = 0
+    private var cachedFree: Int64 = 0
+    private var hasSuccessfulSample = false
+    private var cacheTimestamp: Date?
+    private let cacheTTL: TimeInterval = 10.0
+
     private init() {}
 
-    /// 获取硬盘使用率百分比 (0-100)
-    func getDiskUsage() -> Double {
+    func snapshot() -> Snapshot {
+        lock.lock()
+        defer { lock.unlock() }
+        refreshIfNeededLocked()
+        if hasSuccessfulSample {
+            return Snapshot(
+                percent: cachedUsage,
+                formatted: String(format: "%.0f%%", cachedUsage),
+                available: true,
+                total: cachedTotal,
+                free: cachedFree
+            )
+        }
+        return Snapshot(percent: 0, formatted: "--%", available: false, total: 0, free: 0)
+    }
+
+    func getDiskUsage() -> Double { snapshot().percent }
+    func getFormattedDiskUsage() -> String { snapshot().formatted }
+    func getTotalDiskSpace() -> Int64 { snapshot().total }
+    func getFreeDiskSpace() -> Int64 { snapshot().free }
+
+    private func refreshIfNeededLocked() {
+        if let ts = cacheTimestamp, Date().timeIntervalSince(ts) < cacheTTL {
+            return
+        }
         let fileManager = FileManager.default
         do {
             let systemAttributes = try fileManager.attributesOfFileSystem(forPath: NSHomeDirectory())
             if let totalSize = systemAttributes[.systemSize] as? Int64,
-               let freeSize = systemAttributes[.systemFreeSize] as? Int64 {
+               let freeSize = systemAttributes[.systemFreeSize] as? Int64,
+               totalSize > 0 {
                 let usedSize = totalSize - freeSize
                 let usage = Double(usedSize) / Double(totalSize) * 100.0
-                return max(0.0, min(100.0, usage))
+                cachedUsage = max(0.0, min(100.0, usage))
+                cachedTotal = totalSize
+                cachedFree = freeSize
+                hasSuccessfulSample = true
+                cacheTimestamp = Date()
+                return
             }
         } catch {
-            print("DiskMonitorService: Failed to get disk usage - \(error)")
+            NetPulseLog.error("DiskMonitorService 读取失败: \(error.localizedDescription)")
         }
-        return 0.0
-    }
-
-    /// 获取格式化的硬盘使用率字符串 (如 "45%")
-    func getFormattedDiskUsage() -> String {
-        let usage = getDiskUsage()
-        return String(format: "%.0f%%", usage)
-    }
-
-    /// 获取硬盘总容量 (字节)
-    func getTotalDiskSpace() -> Int64 {
-        let fileManager = FileManager.default
-        do {
-            let systemAttributes = try fileManager.attributesOfFileSystem(forPath: NSHomeDirectory())
-            if let totalSize = systemAttributes[.systemSize] as? Int64 {
-                return totalSize
-            }
-        } catch {
-            print("DiskMonitorService: Failed to get total disk space - \(error)")
-        }
-        return 0
-    }
-
-    /// 获取硬盘可用容量 (字节)
-    func getFreeDiskSpace() -> Int64 {
-        let fileManager = FileManager.default
-        do {
-            let systemAttributes = try fileManager.attributesOfFileSystem(forPath: NSHomeDirectory())
-            if let freeSize = systemAttributes[.systemFreeSize] as? Int64 {
-                return freeSize
-            }
-        } catch {
-            print("DiskMonitorService: Failed to get free disk space - \(error)")
-        }
-        return 0
+        // 失败：不把缓存写成 0%；仅刷新时间戳避免狂刷，保留上次成功
+        cacheTimestamp = Date()
     }
 }

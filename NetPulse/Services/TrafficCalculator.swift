@@ -1,168 +1,54 @@
 import Foundation
+import Darwin
 
-/// 流量计算服务
+/// 流量计算服务：状态收敛到单一串行队列；计数用 getifaddrs，禁止 netstat 子进程
 final class TrafficCalculator {
-    // MARK: - 私有属性
+    private let queue = DispatchQueue(label: "com.netpulse.traffic.serial", qos: .utility)
+
     private var lastBytesIn: UInt64 = 0
     private var lastBytesOut: UInt64 = 0
     private var lastTimestamp: Date?
-
-    // 接口计数值缓存 (接口名 -> 字节数)
     private var interfaceBytesCache: [String: (bytesIn: UInt64, bytesOut: UInt64)] = [:]
-
-    // 是否准备好
     private var isReady = false
 
-    // MARK: - 初始化
+    private var selectedInterfaceName: String = ""
+    private var primaryHint: String?
+    private var wifiBSDName: String?
+
     init() {}
 
-    // MARK: - 公开方法
+    // MARK: - 设置（全部进同队列）
 
-    /// 获取所有网络接口列表
-    func getNetworkInterfaces() -> [NetworkInterface] {
-        var interfaces: [NetworkInterface] = []
-
-        let output = runCommand("/usr/sbin/netstat", "-i", "-b")
-        guard let output = output else { return interfaces }
-
-        let lines = output.components(separatedBy: "\n")
-        for line in lines {
-            // 跳过表头、空行、以太网详情行
-            if line.isEmpty || line.hasPrefix("Kernel") || line.hasPrefix("Name") || line.hasPrefix("Ibytes") || line.contains("Link#") {
-                continue
-            }
-
-            let components = line.split(separator: " ", omittingEmptySubsequences: true)
-            // 需要至少 11 列: name, mtu, network, address, ipkts, ierr, ibytes, opkts, oerr, obytes, coll
-            guard components.count >= 10 else { continue }
-
-            let name = String(components[0])
-
-            // 跳过不需要的接口
-            if name.hasPrefix("lo") || name.hasPrefix("utun") || name.hasPrefix("awdl") || name.hasPrefix("gif") || name.hasPrefix("stf") || name.hasPrefix("anpi") || name.hasPrefix("ap") || name.hasPrefix("bridge") || name.contains("*") {
-                continue
-            }
-
-            // 解析字节数 (Ibytes 在第 6 位, Obytes 在第 9 位)
-            guard let bytesIn = UInt64(components[6]),
-                  let bytesOut = UInt64(components[9]) else {
-                continue
-            }
-
-            let interfaceType = NetworkInterface.inferType(from: name)
-            let displayName = NetworkInterface.getDisplayName(for: name)
-
-            let interface = NetworkInterface(
-                name: name,
-                displayName: displayName,
-                type: interfaceType,
-                isActive: bytesIn > 0 || bytesOut > 0,
-                currentBytesIn: bytesIn,
-                currentBytesOut: bytesOut
-            )
-            interfaces.append(interface)
+    /// 同步写入选中网卡，避免异步竞态导致本拍仍用旧选择
+    func updateSelection(selected: String, primaryHint: String?, wifiBSD: String?) {
+        queue.sync {
+            self.selectedInterfaceName = selected
+            self.primaryHint = primaryHint
+            self.wifiBSDName = wifiBSD
         }
-
-        return interfaces
     }
 
-    /// 计算当前网络流量和速度
-    func calculate(completion: @escaping (NetworkStats) -> Void) {
-        var stats = NetworkStats()
-
-        let output = runCommand("/usr/sbin/netstat", "-i", "-b")
-        guard let output = output else {
-            completion(stats)
-            return
+    /// 异步版本（非热路径可用）
+    func updateSelectionAsync(selected: String, primaryHint: String?, wifiBSD: String?) {
+        queue.async { [weak self] in
+            guard let self = self else { return }
+            self.selectedInterfaceName = selected
+            self.primaryHint = primaryHint
+            self.wifiBSDName = wifiBSD
         }
-
-        let currentTimestamp = Date()
-        let lines = output.components(separatedBy: "\n")
-
-        var totalBytesIn: UInt64 = 0
-        var totalBytesOut: UInt64 = 0
-        var activeInterfaceName = ""
-
-        for line in lines {
-            // 跳过表头、空行、以太网详情行
-            if line.isEmpty || line.hasPrefix("Kernel") || line.hasPrefix("Name") || line.hasPrefix("Ibytes") || line.contains("Link#") {
-                continue
-            }
-
-            let components = line.split(separator: " ", omittingEmptySubsequences: true)
-            guard components.count >= 10 else { continue }
-
-            let name = String(components[0])
-
-            // 跳过不需要的接口
-            if name.hasPrefix("lo") || name.hasPrefix("utun") || name.hasPrefix("awdl") || name.hasPrefix("gif") || name.hasPrefix("stf") || name.hasPrefix("anpi") || name.hasPrefix("ap") || name.hasPrefix("bridge") || name.contains("*") {
-                continue
-            }
-
-            // 解析字节数
-            guard let bytesIn = UInt64(components[6]),
-                  let bytesOut = UInt64(components[9]) else {
-                continue
-            }
-
-            // 记录活跃接口
-            if bytesIn > 0 || bytesOut > 0 {
-                if activeInterfaceName.isEmpty {
-                    activeInterfaceName = NetworkInterface.getDisplayName(for: name)
-                }
-
-                // 计算增量
-                if let cached = interfaceBytesCache[name] {
-                    let deltaIn = bytesIn >= cached.bytesIn ? bytesIn - cached.bytesIn : 0
-                    let deltaOut = bytesOut >= cached.bytesOut ? bytesOut - cached.bytesOut : 0
-                    totalBytesIn += deltaIn
-                    totalBytesOut += deltaOut
-                }
-            }
-
-            // 更新缓存
-            interfaceBytesCache[name] = (bytesIn, bytesOut)
-        }
-
-        // 第一次调用：只建立缓存
-        if !isReady {
-            isReady = true
-            lastTimestamp = currentTimestamp
-            stats.activeInterface = activeInterfaceName.isEmpty ? "无活动" : activeInterfaceName
-            stats.isConnected = !activeInterfaceName.isEmpty
-            completion(stats)
-            return
-        }
-
-        // 计算时间间隔
-        let timeInterval = lastTimestamp.map { currentTimestamp.timeIntervalSince($0) } ?? 1.0
-        guard timeInterval > 0 else {
-            completion(stats)
-            return
-        }
-
-        // 计算速度 (bytes per second)
-        stats.downloadSpeed = Double(totalBytesIn) / timeInterval
-        stats.uploadSpeed = Double(totalBytesOut) / timeInterval
-
-        // 累计总量
-        stats.totalDownloaded = lastBytesIn + totalBytesIn
-        stats.totalUploaded = lastBytesOut + totalBytesOut
-
-        // 更新上一次的值
-        lastBytesIn = stats.totalDownloaded
-        lastBytesOut = stats.totalUploaded
-        lastTimestamp = currentTimestamp
-
-        stats.timestamp = currentTimestamp
-        stats.activeInterface = activeInterfaceName.isEmpty ? "无活动" : activeInterfaceName
-        stats.isConnected = !activeInterfaceName.isEmpty
-
-        completion(stats)
     }
 
-    /// 重置计数器
     func reset() {
+        queue.async { [weak self] in
+            self?.resetLocked()
+        }
+    }
+
+    func resetSync() {
+        queue.sync { resetLocked() }
+    }
+
+    private func resetLocked() {
         lastBytesIn = 0
         lastBytesOut = 0
         lastTimestamp = nil
@@ -170,25 +56,158 @@ final class TrafficCalculator {
         isReady = false
     }
 
-    // MARK: - 私有方法
+    // MARK: - 公开方法
 
-    private func runCommand(_ arguments: String...) -> String? {
-        let task = Process()
-        task.executableURL = URL(fileURLWithPath: "/usr/bin/env")
-        task.arguments = arguments
-
-        let pipe = Pipe()
-        task.standardOutput = pipe
-        task.standardError = pipe
-
-        do {
-            try task.run()
-            task.waitUntilExit()
-
-            let data = pipe.fileHandleForReading.readDataToEndOfFile()
-            return String(data: data, encoding: .utf8)
-        } catch {
-            return nil
+    func getNetworkInterfaces(completion: @escaping ([NetworkInterface]) -> Void) {
+        queue.async { [weak self] in
+            guard let self = self else {
+                completion([])
+                return
+            }
+            completion(self.readInterfacesLocked())
         }
+    }
+
+    func getNetworkInterfacesSync() -> [NetworkInterface] {
+        queue.sync { readInterfacesLocked() }
+    }
+
+    func calculate(completion: @escaping (NetworkStats) -> Void) {
+        queue.async { [weak self] in
+            guard let self = self else {
+                completion(NetworkStats())
+                return
+            }
+            completion(self.calculateLocked())
+        }
+    }
+
+    // MARK: - 私有（queue 内）
+
+    private func readInterfacesLocked() -> [NetworkInterface] {
+        let counters = Self.readInterfaceCounters()
+        var interfaces: [NetworkInterface] = []
+        for (name, bytes) in counters.sorted(by: { $0.key < $1.key }) {
+            if shouldSkipInterface(name) { continue }
+            interfaces.append(NetworkInterface(
+                name: name,
+                displayName: NetworkInterface.getDisplayName(for: name),
+                type: NetworkInterface.inferType(from: name),
+                isActive: bytes.in > 0 || bytes.out > 0,
+                currentBytesIn: bytes.in,
+                currentBytesOut: bytes.out
+            ))
+        }
+        return interfaces
+    }
+
+    private func calculateLocked() -> NetworkStats {
+        var stats = NetworkStats()
+        let currentTimestamp = Date()
+        let counters = Self.readInterfaceCounters()
+        let previousCache = interfaceBytesCache
+
+        for (name, bytes) in counters {
+            if shouldSkipInterface(name) { continue }
+            interfaceBytesCache[name] = (bytes.in, bytes.out)
+        }
+
+        let activeEn = counters
+            .filter { name, bytes in
+                name.hasPrefix("en") && !shouldSkipInterface(name) && (bytes.in > 0 || bytes.out > 0)
+            }
+            .sorted { a, b in (a.value.in + a.value.out) > (b.value.in + b.value.out) }
+            .map { $0.key }
+
+        let enCandidates: [String] = {
+            if !activeEn.isEmpty { return activeEn }
+            return counters.keys.filter { $0.hasPrefix("en") && !shouldSkipInterface($0) }.sorted()
+        }()
+
+        guard let target = TrafficLogic.resolveCountedInterface(
+            selected: selectedInterfaceName,
+            primaryHint: primaryHint,
+            wifiBSD: wifiBSDName,
+            activeEnInterfaces: enCandidates
+        ), let current = counters[target] else {
+            stats.activeInterface = "无活动"
+            stats.isConnected = false
+            stats.timestamp = currentTimestamp
+            return stats
+        }
+
+        let display = NetworkInterface.getDisplayName(for: target)
+        let prev = previousCache[target]
+        let deltaIn = TrafficLogic.delta(current: current.in, previous: prev.map { $0.bytesIn })
+        let deltaOut = TrafficLogic.delta(current: current.out, previous: prev.map { $0.bytesOut })
+
+        stats.activeInterface = display
+        stats.isConnected = true
+        stats.timestamp = currentTimestamp
+
+        if TrafficLogic.shouldDiscardFirstSample(isReady: isReady) {
+            isReady = true
+            lastTimestamp = currentTimestamp
+            return stats
+        }
+
+        let timeInterval = lastTimestamp.map { currentTimestamp.timeIntervalSince($0) } ?? 1.0
+        if TrafficLogic.shouldIgnoreShortInterval(timeInterval) {
+            stats.totalDownloaded = lastBytesIn
+            stats.totalUploaded = lastBytesOut
+            return stats
+        }
+
+        if TrafficLogic.shouldDiscardSpeedForLongInterval(timeInterval) {
+            lastTimestamp = currentTimestamp
+            lastBytesIn += deltaIn
+            lastBytesOut += deltaOut
+            stats.totalDownloaded = lastBytesIn
+            stats.totalUploaded = lastBytesOut
+            return stats
+        }
+
+        stats.downloadSpeed = TrafficLogic.speed(bytes: deltaIn, interval: timeInterval)
+        stats.uploadSpeed = TrafficLogic.speed(bytes: deltaOut, interval: timeInterval)
+        stats.totalDownloaded = lastBytesIn + deltaIn
+        stats.totalUploaded = lastBytesOut + deltaOut
+        lastBytesIn = stats.totalDownloaded
+        lastBytesOut = stats.totalUploaded
+        lastTimestamp = currentTimestamp
+        return stats
+    }
+
+    private func shouldSkipInterface(_ name: String) -> Bool {
+        name.hasPrefix("lo")
+            || name.hasPrefix("utun")
+            || name.hasPrefix("awdl")
+            || name.hasPrefix("gif")
+            || name.hasPrefix("stf")
+            || name.hasPrefix("anpi")
+            || name.hasPrefix("ap")
+            || name.hasPrefix("bridge")
+            || name.hasPrefix("llw")
+            || name.hasPrefix("nan")
+            || name.contains("*")
+    }
+
+    /// getifaddrs(AF_LINK / if_data) 读取累计字节，替代 netstat 子进程
+    static func readInterfaceCounters() -> [String: (in: UInt64, out: UInt64)] {
+        var result: [String: (in: UInt64, out: UInt64)] = [:]
+        var ifaddr: UnsafeMutablePointer<ifaddrs>?
+        guard getifaddrs(&ifaddr) == 0 else { return result }
+        defer { freeifaddrs(ifaddr) }
+
+        var ptr = ifaddr
+        while let p = ptr {
+            defer { ptr = p.pointee.ifa_next }
+            let name = String(cString: p.pointee.ifa_name)
+            guard let addr = p.pointee.ifa_addr else { continue }
+            guard addr.pointee.sa_family == UInt8(AF_LINK) else { continue }
+            guard let dataPtr = p.pointee.ifa_data else { continue }
+            let data = dataPtr.assumingMemoryBound(to: if_data.self)
+            result[name] = (UInt64(data.pointee.ifi_ibytes), UInt64(data.pointee.ifi_obytes))
+        }
+        return result
     }
 }
